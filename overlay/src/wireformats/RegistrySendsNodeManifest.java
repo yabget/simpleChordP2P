@@ -3,5 +3,9 @@ package wireformats;
 /**
  * Created by ydubale on 1/22/15.
  */
-public class RegistrySendsNodeManifest {
+public class RegistrySendsNodeManifest implements Event {
+    @Override
+    public byte[] getBytes() {
+        return new byte[0];
+    }
 }
