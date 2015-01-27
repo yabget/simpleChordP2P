@@ -21,17 +21,17 @@ public class TCPConnection {
         tcpS.sendData(dataToSend);
     }
 
-    public void configRegistry(ServerSocket ss){
-
+    public byte[] recieveData(Socket socket) {
+        TCPReceiver tcpR = new TCPReceiver(socket);
+        return tcpR.receive();
     }
 
+
     private class TCPSender{
-        private Socket socket;
         private DataOutputStream dos;
 
         public TCPSender(Socket socket){
             try{
-                this.socket = socket;
                 dos = new DataOutputStream(socket.getOutputStream());
             }
             catch(IOException ioe){
@@ -52,12 +52,12 @@ public class TCPConnection {
         }
     }
 
-    private class TCPReceiverThread implements Runnable{
+    private class TCPReceiver {
 
         private Socket socket;
         private DataInputStream dis;
 
-        public TCPReceiverThread(Socket socket) {
+        public TCPReceiver(Socket socket) {
             try {
                 this.socket = socket;
                 dis = new DataInputStream(socket.getInputStream());
@@ -67,28 +67,22 @@ public class TCPConnection {
             }
         }
 
-        @Override
-        public void run() {
-            int dataLen;
-            while(this.socket != null){
-                try {
+        public byte[] receive() {
+            byte[] data = null;
+            try {
+                int dataLen;
+                while(socket != null){
                     dataLen = dis.readInt();
-                    byte[] data = new byte[dataLen];
+                    data = new byte[dataLen];
                     dis.readFully(data, 0, dataLen);
 
-                    Event thisEvent = EventFactory.getInstance().getEvent(data[0]);
-
-
-                }
-                catch (SocketException se){
-                    se.printStackTrace();
-                    break;
-                }
-                catch (IOException ioe){
-                    ioe.printStackTrace();
-                    break;
                 }
             }
+            catch(IOException ioe ){
+                ioe.printStackTrace();
+            }
+            return data;
         }
+
     }
 }
