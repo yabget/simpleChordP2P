@@ -6,4 +6,6 @@ package wireformats;
 public interface Event {
 
     public byte[] getBytes();
+    public byte getType();
+
 }

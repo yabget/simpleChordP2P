@@ -1,8 +1,10 @@
 package transport;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+
+import node.Node;
+import wireformats.Event;
+import wireformats.EventFactory;
+
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -11,25 +13,28 @@ import java.net.Socket;
  */
 public class TCPServerThread implements Runnable {
 
-    private Socket sock = null;
+    private Socket socket;
     private ServerSocket ss;
+    private Node node;
 
-    public TCPServerThread(ServerSocket ss){
-        this.ss = ss;
+
+    public TCPServerThread(Socket socket, Node node){
+        this.socket = socket;
+        this.node = node;
     }
 
     @Override
     public void run() {
-        try {
-            System.out.println("Listening on Port : " + ss.getLocalPort());
-
-            sock = ss.accept();
-
-            DataInputStream dis = new DataInputStream(sock.getInputStream());
-            DataOutputStream dos = new DataOutputStream(sock.getOutputStream());
-
-        } catch (IOException e) {
-            e.printStackTrace();
+        while(true){
+            while(socket.isConnected()){
+                TCPConnection tcpC = new TCPConnection(socket);
+                byte[] meData = tcpC.recieveData();
+                EventFactory ef = EventFactory.getInstance();
+                Event toReply = node.onEvent(ef.getEvent(meData));
+                tcpC.sendData(toReply.getBytes());
+            }
         }
+
     }
+
 }

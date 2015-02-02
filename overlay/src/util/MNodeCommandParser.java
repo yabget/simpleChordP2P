@@ -1,5 +1,8 @@
 package util;
 
+import wireformats.Event;
+import wireformats.OverlayNodeSendsDeregistration;
+
 /**
  * Created by ydubale on 1/25/15.
  */
@@ -24,16 +27,17 @@ public class MNodeCommandParser {
         System.out.println("\t" + HELP);
     }
 
-    public void parseArgument(String command){
+    public Event parseArgument(String command){
         if(command.equals(PRINT_COUNTERS_AND_DIAGNOSTICS)){
 
         }
         else if(command.equals(EXIT_OVERALY)){
-
+            return (Event)new OverlayNodeSendsDeregistration();
         }
         else {
             printOptions();
         }
+        return null;
     }
 
 }

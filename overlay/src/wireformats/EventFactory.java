@@ -14,13 +14,15 @@ public class EventFactory {
 
     }
 
-    public Event getEvent(byte protocol){
+    public Event getEvent(byte[] data) {
         Event mainE = null;
+        byte protocol = data[0];
 
-        switch(protocol){
+        switch (protocol) {
             case Protocol.OVERLAY_NODE_SENDS_REGISTRATION:
-                mainE = new OverlayNodeSendsRegistration();
+                mainE = new OverlayNodeSendsRegistration(data);
                 break;
+            /*
             case Protocol.REGISTRY_REPORTS_REGISTRATION_STATUS:
                 mainE = new RegistryReportsRegistrationStatus();
                 break;
@@ -42,6 +44,7 @@ public class EventFactory {
             case Protocol.OVERLAY_NODE_REPORTS_TRAFFIC_SUMMARY:
                 mainE = new OverlayNodeReportsTrafficSummary();
                 break;
+                */
         }
 
         return mainE;

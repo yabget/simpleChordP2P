@@ -1,15 +1,23 @@
 package util;
 
+import node.Registry;
+
 /**
  * Created by ydubale on 1/25/15.
  */
 public class RegistryCommandsParser {
+
+    Registry registry;
 
     private final static String LIST_MESSAGING_NODES = "list-messaging-nodes";
     private final static String SETUP_OVERLAY = "setup-overlay";
     private final static String LIST_ROUTING_TABLES = "list-routing-tables";
     private final static String START = "start";
     private final static String HELP = "help";
+
+    public RegistryCommandsParser(Registry registry){
+        this.registry = registry;
+    }
 
     private void printOptions(){
         System.out.println("You are at the registry. Possible commands are:");
@@ -32,7 +40,7 @@ public class RegistryCommandsParser {
         String command = args[0];
 
         if(command.equals(LIST_MESSAGING_NODES)){
-
+            registry.list_messaging_nodes();
         }
         else if(command.equals(SETUP_OVERLAY)){
 

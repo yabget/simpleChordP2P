@@ -3,10 +3,11 @@ package node;
 import transport.TCPConnection;
 import util.CommandLineParser;
 import util.MNodeCommandParser;
+import wireformats.Event;
+import wireformats.EventFactory;
 import wireformats.OverlayNodeSendsRegistration;
+import wireformats.RegistryReportsRegistrationStatus;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -17,42 +18,47 @@ import java.util.Scanner;
  * Created by ydubale on 1/22/15.
  */
 
-public class MessagingNode {
+public class MessagingNode implements Node {
 
-    private DataInputStream dis;
-    private DataOutputStream dos;
-    private String myIp;
-    private int myPort;
+    private int port;
+    private String ip;
+    private int ID;
+    private Socket socket;
     private TCPConnection tcpC;
-    private Socket servSock;
+
+    public MessagingNode(String myIP, int myPort, int myID){
+        this.ip = myIP;
+        this.port = myPort;
+        this.ID = myID;
+    }
+
+    public int getID(){
+        return ID;
+    }
 
     public MessagingNode(String registry_ip, int registry_port) {
-        tcpC = new TCPConnection();
-        try {
-            InetAddress inetA = InetAddress.getLocalHost();
-            myIp = inetA.getHostAddress();
+        try{
+            socket = new Socket(registry_ip, registry_port);
+            tcpC = new TCPConnection(socket);
+            EventFactory ef = EventFactory.getInstance();
 
-            servSock = new Socket(registry_ip, registry_port);
+            OverlayNodeSendsRegistration sendReg = new OverlayNodeSendsRegistration(socket.getLocalAddress().getHostAddress(), socket.getLocalPort());
 
-            myPort = servSock.getLocalPort();
+            tcpC.sendData(sendReg.getBytes());
 
-            dis = new DataInputStream(servSock.getInputStream());
-            dos = new DataOutputStream(servSock.getOutputStream());
+            byte[] recvData = tcpC.recieveData();
+
+            RegistryReportsRegistrationStatus rrRS = new RegistryReportsRegistrationStatus(recvData);
+
+            this.ID = rrRS.getAssignedID();
+
+            System.out.println(rrRS.getInfoString());
 
         }
-        catch (IOException e) {
-            System.out.println("MessagingNode");
-            e.printStackTrace();
+        catch(IOException ioe){
+            ioe.printStackTrace();
         }
     }
-
-    public void startCommunication(){
-        //Registration
-        OverlayNodeSendsRegistration onsr = new OverlayNodeSendsRegistration(myIp, myPort);
-        tcpC.sendData(onsr.getBytes(), servSock);
-
-    }
-
 
     public static void main(String args[]){
 
@@ -75,11 +81,23 @@ public class MessagingNode {
             String input;
 
             while((input = scan.nextLine()) != null){
-                mNodeCP.parseArgument(input);
+                Event currEvent = mNodeCP.parseArgument(input);
+
+
             }
+
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
+    }
 
+    @Override
+    public String toString() {
+        return this.ip + " " + this.port + " " + this.ID;
+    }
+
+    @Override
+    public Event onEvent(Event event) {
+        return event;
     }
 }

@@ -1,9 +1,6 @@
 package wireformats;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -13,15 +10,43 @@ public class OverlayNodeSendsRegistration implements Event {
     private int lengthIP;
     private String ipAddr;
     private int portNum;
-
-    public OverlayNodeSendsRegistration(){
-
-    }
+    private byte[] dataBytes;
+    private byte type;
 
     public OverlayNodeSendsRegistration(String ipAddr, int portNum) {
-        lengthIP = ipAddr.length();
         this.ipAddr = ipAddr;
         this.portNum = portNum;
+    }
+
+    public OverlayNodeSendsRegistration(byte[] data) {
+        dataBytes = data;
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(dataBytes);
+        DataInputStream dis = new DataInputStream(new BufferedInputStream(bais));
+        try {
+            type = dis.readByte();
+
+            lengthIP = dis.readInt();
+
+            byte[] ipaddr = new byte[lengthIP];
+            dis.readFully(ipaddr);
+
+            ipAddr = new String(ipaddr);
+
+
+            portNum = dis.readInt();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String getIpAddr(){
+        return ipAddr;
+    }
+
+    public int getPort(){
+        return portNum;
     }
 
     @Override
@@ -32,6 +57,7 @@ public class OverlayNodeSendsRegistration implements Event {
             DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(baos));
 
             dos.writeByte(Protocol.OVERLAY_NODE_SENDS_REGISTRATION);
+            lengthIP = ipAddr.length();
             dos.writeInt(lengthIP);
 
             byte[] ipBytes = ipAddr.getBytes();
@@ -51,4 +77,10 @@ public class OverlayNodeSendsRegistration implements Event {
 
         return toSend;
     }
+
+    @Override
+    public byte getType() {
+        return type;
+    }
+
 }
