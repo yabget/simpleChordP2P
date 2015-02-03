@@ -44,12 +44,22 @@ public class RegistryCommandsParser {
         }
         else if(command.equals(SETUP_OVERLAY)){
 
+            int size_table = 3;
+            if(args.length == 2){
+                try{
+                    size_table = Integer.parseInt(args[1]);
+                }
+                catch(NumberFormatException nfe){
+                    System.out.println("Unable to parse setup-overlay integer. Using default value of 3");
+                }
+            }
+            registry.setup_overlay(size_table);
         }
         else if(command.equals(LIST_ROUTING_TABLES)){
-
+            registry.list_routing_tables();
         }
         else if(command.equals(START)){
-
+            registry.start();
         }
         else{
             printOptions();

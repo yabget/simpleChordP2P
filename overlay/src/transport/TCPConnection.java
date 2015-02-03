@@ -1,7 +1,5 @@
 package transport;
 
-import node.Node;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -58,7 +56,6 @@ public class TCPConnection {
 
         private Socket socket;
         private DataInputStream dis;
-        private Node node;
 
         public TCPReceiver(Socket socket) {
             try {
