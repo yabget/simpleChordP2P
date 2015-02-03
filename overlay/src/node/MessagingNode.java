@@ -1,11 +1,11 @@
 package node;
 
 import transport.TCPConnection;
+import transport.TCPServerThread;
 import util.CommandLineParser;
 import util.MNodeCommandParser;
 import wireformats.Event;
-import wireformats.EventFactory;
-import wireformats.OverlayNodeSendsRegistration;
+import wireformats.Protocol;
 import wireformats.RegistryReportsRegistrationStatus;
 
 import java.io.IOException;
@@ -18,13 +18,15 @@ import java.util.Scanner;
  * Created by ydubale on 1/22/15.
  */
 
-public class MessagingNode implements Node {
+public class MessagingNode implements Node, Runnable {
 
     private int port;
     private String ip;
     private int ID;
     private Socket socket;
     private TCPConnection tcpC;
+    private String registry_ip;
+    private int registry_port;
 
     public MessagingNode(String myIP, int myPort, int myID){
         this.ip = myIP;
@@ -32,32 +34,52 @@ public class MessagingNode implements Node {
         this.ID = myID;
     }
 
-    public int getID(){
-        return ID;
+    public MessagingNode(String registry_ip, int registry_port) {
+        this.registry_ip = registry_ip;
+        this.registry_port = registry_port;
     }
 
-    public MessagingNode(String registry_ip, int registry_port) {
-        try{
+    @Override
+    public void run() {
+        try {
+            //Start thread to communicate with registry
             socket = new Socket(registry_ip, registry_port);
-            tcpC = new TCPConnection(socket);
-            EventFactory ef = EventFactory.getInstance();
-
-            OverlayNodeSendsRegistration sendReg = new OverlayNodeSendsRegistration(socket.getLocalAddress().getHostAddress(), socket.getLocalPort());
-
-            tcpC.sendData(sendReg.getBytes());
-
-            byte[] recvData = tcpC.recieveData();
-
-            RegistryReportsRegistrationStatus rrRS = new RegistryReportsRegistrationStatus(recvData);
-
-            this.ID = rrRS.getAssignedID();
-
-            System.out.println(rrRS.getInfoString());
-
+            new Thread(new TCPServerThread(socket, this)).start();
         }
         catch(IOException ioe){
             ioe.printStackTrace();
         }
+    }
+
+    public int getID(){
+        return ID;
+    }
+
+    @Override
+    public String toString() {
+        return this.ip + " " + this.port + " " + this.ID;
+    }
+
+    public boolean equals(Object object){
+        if(object == null || !(object instanceof MessagingNode)){
+            return false;
+        }
+        return false;
+    }
+
+    @Override
+    public synchronized Event onEvent(Event event) {
+        if(event == null){
+            System.out.println("Messaging node EVENT IS NULL!");
+            return null;
+        }
+        if(event.getType() == Protocol.REGISTRY_REPORTS_REGISTRATION_STATUS){
+            RegistryReportsRegistrationStatus rrRS = (RegistryReportsRegistrationStatus) event;
+            this.ID = rrRS.getAssignedID();
+            System.out.println(rrRS.getInfoString());
+            return null;
+        }
+        return null;
     }
 
     public static void main(String args[]){
@@ -73,6 +95,10 @@ public class MessagingNode implements Node {
 
         MessagingNode mNode = new MessagingNode(registry_host, registry_port);
 
+        Thread mNodeThread = new Thread(mNode);
+
+        mNodeThread.start();
+
         try {
             InetAddress inetA = InetAddress.getLocalHost();
             MNodeCommandParser mNodeCP = new MNodeCommandParser(inetA.getHostName(), inetA.getHostAddress());
@@ -81,8 +107,6 @@ public class MessagingNode implements Node {
             String input;
 
             while((input = scan.nextLine()) != null){
-                Event currEvent = mNodeCP.parseArgument(input);
-
 
             }
 
@@ -91,13 +115,4 @@ public class MessagingNode implements Node {
         }
     }
 
-    @Override
-    public String toString() {
-        return this.ip + " " + this.port + " " + this.ID;
-    }
-
-    @Override
-    public Event onEvent(Event event) {
-        return event;
-    }
 }

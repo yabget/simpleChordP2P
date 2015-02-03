@@ -29,12 +29,6 @@ public class Registry implements Node, Runnable {
         messNode = new Hashtable<>();
     }
 
-    public void list_messaging_nodes(){
-        for(Integer i : messNode.keySet()){
-            System.out.println(messNode.get(i));
-        }
-    }
-
     @Override
     public void run() {
         try {
@@ -48,8 +42,39 @@ public class Registry implements Node, Runnable {
         }
     }
 
+    // ----------------- Foreground commands ------------------- //
+    public synchronized void list_messaging_nodes(){
+        int count = 1;
+        for(Integer i : messNode.keySet()){
+            System.out.println(count + ": " + messNode.get(i));
+            count++;
+        }
+    }
+
     public Hashtable<Integer, MessagingNode> getNodes(){
         return messNode;
+    }
+
+    @Override
+    public synchronized Event onEvent(Event event) {
+        if(event.getType() == Protocol.OVERLAY_NODE_SENDS_REGISTRATION){
+            OverlayNodeSendsRegistration sendsReg = (OverlayNodeSendsRegistration) event;
+            Random rand = new Random();
+
+            //todo: Check no duplicate ids
+            int assignedID = rand.nextInt(100);
+
+            MessagingNode mNode = new MessagingNode(sendsReg.getIpAddr(), sendsReg.getPort(), assignedID);
+            messNode.put(mNode.getID(), mNode);
+
+            String infoStr = "Registration request successful. The number of messaging nodes currently constituting the overlay is ("+ messNode.size() +")";
+
+            RegistryReportsRegistrationStatus regRRS = new RegistryReportsRegistrationStatus(assignedID, infoStr.toString());
+
+            return regRRS;
+
+        }
+        return null;
     }
 
     public static void main(String args[]){
@@ -73,27 +98,5 @@ public class Registry implements Node, Runnable {
             System.out.print("Command: ");
         }
 
-    }
-
-    @Override
-    public synchronized Event onEvent(Event event) {
-        if(event.getType() == Protocol.OVERLAY_NODE_SENDS_REGISTRATION){
-            OverlayNodeSendsRegistration sendsReg = (OverlayNodeSendsRegistration) event;
-            Random rand = new Random();
-
-            //todo: Check no duplicate ids
-            int assignedID = rand.nextInt(100);
-
-            MessagingNode mNode = new MessagingNode(sendsReg.getIpAddr(), sendsReg.getPort(), assignedID);
-            messNode.put(mNode.getID(), mNode);
-
-            String infoStr = "Registration request successful. The number of messaging nodes currently constituting the overlay is ("+ messNode.size() +")";
-
-            RegistryReportsRegistrationStatus regRRS = new RegistryReportsRegistrationStatus(assignedID, infoStr.toString());
-
-            return regRRS;
-
-        }
-        return null;
     }
 }

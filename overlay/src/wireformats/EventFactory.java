@@ -22,10 +22,10 @@ public class EventFactory {
             case Protocol.OVERLAY_NODE_SENDS_REGISTRATION:
                 mainE = new OverlayNodeSendsRegistration(data);
                 break;
-            /*
             case Protocol.REGISTRY_REPORTS_REGISTRATION_STATUS:
-                mainE = new RegistryReportsRegistrationStatus();
+                mainE = new RegistryReportsRegistrationStatus(data);
                 break;
+            /*
             case Protocol.REGISTRY_SENDS_NODE_MANIFEST:
                 mainE = new RegistrySendsNodeManifest();
                 break;

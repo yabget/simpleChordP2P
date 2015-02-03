@@ -1,9 +1,11 @@
 package transport;
 
 
+import node.MessagingNode;
 import node.Node;
 import wireformats.Event;
 import wireformats.EventFactory;
+import wireformats.OverlayNodeSendsRegistration;
 
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -25,13 +27,28 @@ public class TCPServerThread implements Runnable {
 
     @Override
     public void run() {
+        TCPConnection tcpC = new TCPConnection(socket);
+
+        // Send initial message to registry
+        if(node != null && node instanceof MessagingNode){
+            OverlayNodeSendsRegistration sendReg = new OverlayNodeSendsRegistration(
+                    socket.getLocalAddress().getHostAddress(), socket.getLocalPort()
+            );
+            tcpC.sendData(sendReg.getBytes());
+            System.out.println("Trying to register myself to registry.");
+        }
+
         while(true){
             while(socket.isConnected()){
-                TCPConnection tcpC = new TCPConnection(socket);
-                byte[] meData = tcpC.recieveData();
-                EventFactory ef = EventFactory.getInstance();
-                Event toReply = node.onEvent(ef.getEvent(meData));
-                tcpC.sendData(toReply.getBytes());
+                byte[] recievedD = tcpC.recieveData();
+                System.out.println("1st byte received (protocol): " + recievedD[0]);
+
+                Event receivedE = EventFactory.getInstance().getEvent(recievedD);
+                Event toReply = node.onEvent(receivedE);
+
+                if(toReply != null){
+                    tcpC.sendData(toReply.getBytes());
+                }
             }
         }
 
