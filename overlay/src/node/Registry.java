@@ -1,6 +1,7 @@
 package node;
 
 import transport.TCPConnection;
+import transport.TCPConnectionsCache;
 import transport.TCPServerThread;
 import util.CommandLineParser;
 import util.RegistryCommandsParser;
@@ -24,17 +25,14 @@ public class Registry implements Node, Runnable {
     private ServerSocket ss;
     private int portNum;
     private Hashtable<Integer, MessagingNode> messNode;
-    private Hashtable<Socket, TCPConnection> connections;
     private int routingTableSize = 3;
     private List<Integer> unUsedKeys;
 
     public Registry(int port){
         this.portNum = port;
         messNode = new Hashtable<>();
-        connections = new Hashtable<>();
 
         unUsedKeys = new ArrayList<>();
-
         for(int i = 0; i < MAX_NODE_ID; i++){
             unUsedKeys.add(i);  //Populate array with IDs (0 - 127)
         }
@@ -46,12 +44,18 @@ public class Registry implements Node, Runnable {
             ss = new ServerSocket(portNum, 10);
             Socket tempSock;
             while((tempSock = ss.accept()) != null){
-                connections.put(tempSock, new TCPConnection(tempSock));
+
+                int randomID = getRandomID();
+                if(randomID == -1){
+                    System.out.println("No more available IDs to assign. No longer accepting connections.");
+                    break;
+                }
+
+                messNode.put(randomID, new MessagingNode(randomID, tempSock));
                 (new Thread(new TCPServerThread(tempSock, this))).start();
             }
         } catch (IOException e) {
             e.printStackTrace();
-
         }
     }
 
@@ -64,7 +68,11 @@ public class Registry implements Node, Runnable {
         }
     }
 
+
+
     private int[] getRoutingTableForIndex(int index, Integer[] sortedIDs){
+
+
 
         return null;
     }
@@ -73,6 +81,10 @@ public class Registry implements Node, Runnable {
         routingTableSize = size_table;
         Object[] idsSorted = messNode.keySet().toArray();
         Arrays.sort(idsSorted);
+
+        for(int i= 0; i < idsSorted.length; i++){
+
+        }
 
     }
 
@@ -99,6 +111,17 @@ public class Registry implements Node, Runnable {
         return assignedID;
     }
 
+    private int getMessagingNodeID(String ip, int port){
+        for(Integer i : messNode.keySet()){
+            MessagingNode mNode = messNode.get(i);
+            if(mNode.getSocket().getPort() == port &&
+                    mNode.getSocket().getInetAddress().getHostAddress().equals(ip)){
+                return i;
+            }
+        }
+        return -1;
+    }
+
 
     public Hashtable<Integer, MessagingNode> getNodes(){
         return messNode;
@@ -110,22 +133,15 @@ public class Registry implements Node, Runnable {
         if(event.getType() == Protocol.OVERLAY_NODE_SENDS_REGISTRATION){
             OverlayNodeSendsRegistration sendsReg = (OverlayNodeSendsRegistration) event;
 
-            int randomID = getRandomID();
-            if(randomID == -1){
-                System.out.println("No more available IDs to assign.");
-                return null;
-            }
+            int assignedID = getMessagingNodeID(sendsReg.getIpAddr(), sendsReg.getPort());
 
-            System.out.println("Using ID " + randomID);
-
-            MessagingNode mNode = new MessagingNode(sendsReg.getIpAddr(), sendsReg.getPort(), randomID);
-            synchronized (messNode){
-                messNode.put(mNode.getID(), mNode);
+            if(assignedID == -1){
+                System.out.println("NEVER COMMUNICATED WITH THIS NODE BEFORE");
             }
 
             String infoStr = "Registration request successful. The number of messaging nodes currently constituting the overlay is ("+ messNode.size() +")";
 
-            RegistryReportsRegistrationStatus regRRS = new RegistryReportsRegistrationStatus(randomID, infoStr.toString());
+            RegistryReportsRegistrationStatus regRRS = new RegistryReportsRegistrationStatus(assignedID, infoStr.toString());
 
             return regRRS;
 

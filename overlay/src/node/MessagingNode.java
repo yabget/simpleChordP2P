@@ -11,6 +11,7 @@ import wireformats.RegistryReportsRegistrationStatus;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
@@ -20,52 +21,47 @@ import java.util.Scanner;
 
 public class MessagingNode implements Node, Runnable {
 
-    private int port;
-    private String ip;
     private int ID;
     private Socket socket;
     private TCPConnection tcpC;
-    private String registry_ip;
-    private int registry_port;
 
-    public MessagingNode(String myIP, int myPort, int myID){
-        this.ip = myIP;
-        this.port = myPort;
-        this.ID = myID;
-    }
-
-    public MessagingNode(String registry_ip, int registry_port) {
-        this.registry_ip = registry_ip;
-        this.registry_port = registry_port;
+    public MessagingNode(int nodeID, Socket socket){
+        this.ID = nodeID;
+        this.socket = socket;
+        this.tcpC = new TCPConnection(socket);
     }
 
     @Override
     public void run() {
-        try {
-            //Start thread to communicate with registry
-            socket = new Socket(registry_ip, registry_port);
-            new Thread(new TCPServerThread(socket, this)).start();
-        }
-        catch(IOException ioe){
-            ioe.printStackTrace();
-        }
+        //Start thread to communicate with registry
+        new Thread(new TCPServerThread(socket, this)).start();
     }
 
     public int getID(){
         return ID;
     }
 
-    @Override
-    public String toString() {
-        return this.ip + " " + this.port + " " + this.ID;
+    public Socket getSocket(){
+        return socket;
     }
 
-    public boolean equals(Object object){
-        if(object == null || !(object instanceof MessagingNode)){
+    public boolean equals(Object other){
+        if(other == null || !(other instanceof MessagingNode)){
             return false;
         }
-        return false;
+        return getSocket().equals(((MessagingNode) other).getSocket());
     }
+
+    @Override
+    public String toString() {
+        return socket.getInetAddress().getHostAddress() +
+                " " + socket.getPort() + " " + getID();
+    }
+
+    private void setID(int id){
+        this.ID = id;
+    }
+
 
     @Override
     public synchronized Event onEvent(Event event) {
@@ -75,7 +71,7 @@ public class MessagingNode implements Node, Runnable {
         }
         if(event.getType() == Protocol.REGISTRY_REPORTS_REGISTRATION_STATUS){
             RegistryReportsRegistrationStatus rrRS = (RegistryReportsRegistrationStatus) event;
-            this.ID = rrRS.getAssignedID();
+            setID(rrRS.getAssignedID());
             System.out.println(rrRS.getInfoString());
             return null;
         }
@@ -93,24 +89,26 @@ public class MessagingNode implements Node, Runnable {
 
         System.out.printf("Connecting to %s on port %s ...\n", registry_host, registry_port);
 
-        MessagingNode mNode = new MessagingNode(registry_host, registry_port);
-
-        Thread mNodeThread = new Thread(mNode);
-
-        mNodeThread.start();
-
         try {
-            InetAddress inetA = InetAddress.getLocalHost();
-            MNodeCommandParser mNodeCP = new MNodeCommandParser(inetA.getHostName(), inetA.getHostAddress());
+            MessagingNode mNode = new MessagingNode(-1, new Socket(registry_host, registry_port));
+            Thread mNodeThread = new Thread(mNode);
+            mNodeThread.start();
 
+            //Start parsing commands
+            MNodeCommandParser mNodeCP = new MNodeCommandParser();
             Scanner scan = new Scanner(System.in);
             String input;
 
             while((input = scan.nextLine()) != null){
 
             }
+        }
+        catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        catch (IOException e) {
+            System.out.println("ERROR! Could not open socket correctly.");
 
-        } catch (UnknownHostException e) {
             e.printStackTrace();
         }
     }

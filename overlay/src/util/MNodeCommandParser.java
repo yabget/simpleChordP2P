@@ -3,6 +3,9 @@ package util;
 import wireformats.Event;
 import wireformats.OverlayNodeSendsDeregistration;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 /**
  * Created by ydubale on 1/25/15.
  */
@@ -12,16 +15,13 @@ public class MNodeCommandParser {
     public static final String EXIT_OVERALY = "exit-overlay";
     public static final String HELP = "help";
 
-    private String hostName;
-    private String ip;
+    public MNodeCommandParser(){
 
-    public MNodeCommandParser(String hostName, String ip){
-        this.hostName = hostName;
-        this.ip = ip;
     }
 
-    private void printOptions(){
-        System.out.println("You are on " + hostName + " ip " + ip);
+    private void printOptions() throws UnknownHostException {
+        InetAddress inetA = InetAddress.getLocalHost();
+        System.out.println("You are on " + inetA.getHostName() + " ip " + inetA.getHostAddress());
         System.out.println("\t" + PRINT_COUNTERS_AND_DIAGNOSTICS);
         System.out.println("\t" + EXIT_OVERALY);
         System.out.println("\t" + HELP);
@@ -35,7 +35,11 @@ public class MNodeCommandParser {
             return (Event)new OverlayNodeSendsDeregistration();
         }
         else {
-            printOptions();
+            try {
+                printOptions();
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
         }
         return null;
     }
