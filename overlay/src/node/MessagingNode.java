@@ -1,5 +1,7 @@
 package node;
 
+import routing.RoutingEntry;
+import routing.RoutingTable;
 import transport.TCPConnection;
 import transport.TCPServerThread;
 import util.CommandLineParser;
@@ -7,13 +9,14 @@ import util.MNodeCommandParser;
 import wireformats.Event;
 import wireformats.Protocol;
 import wireformats.RegistryReportsRegistrationStatus;
+import wireformats.RegistrySendsNodeManifest;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.HashSet;
 import java.util.Scanner;
+import java.util.Set;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -24,11 +27,35 @@ public class MessagingNode implements Node, Runnable {
     private int ID;
     private Socket socket;
     private TCPConnection tcpC;
+    private RoutingTable routingTable;
+    private Set<Integer> allOtherMNodes;
 
     public MessagingNode(int nodeID, Socket socket){
         this.ID = nodeID;
         this.socket = socket;
         this.tcpC = new TCPConnection(socket);
+        routingTable = new RoutingTable();
+        allOtherMNodes = new HashSet<>();
+    }
+
+    public void setRoutingTable(RoutingTable rt){
+        routingTable = rt;
+    }
+
+    public void setAllOtherMNodes(Set<Integer> allOtherMNodes){
+        this.allOtherMNodes = allOtherMNodes;
+    }
+
+    public void printRoutingTable(){
+        System.out.println("Printing routing table for: " + ID);
+        for(RoutingEntry rEntry : routingTable.getEntries()){
+            System.out.println(rEntry);
+        }
+        System.out.println();
+    }
+
+    public TCPConnection getTCPC(){
+        return tcpC;
     }
 
     @Override
@@ -69,11 +96,24 @@ public class MessagingNode implements Node, Runnable {
             System.out.println("Messaging node EVENT IS NULL!");
             return null;
         }
-        if(event.getType() == Protocol.REGISTRY_REPORTS_REGISTRATION_STATUS){
+        byte eventType = event.getType();
+        if(eventType == Protocol.REGISTRY_REPORTS_REGISTRATION_STATUS){
             RegistryReportsRegistrationStatus rrRS = (RegistryReportsRegistrationStatus) event;
             setID(rrRS.getAssignedID());
             System.out.println(rrRS.getInfoString());
             return null;
+        }
+        else if(eventType == Protocol.REGISTRY_SENDS_NODE_MANIFEST){
+            RegistrySendsNodeManifest rsnm = (RegistrySendsNodeManifest) event;
+            setRoutingTable(rsnm.getRoutingTable());
+            setAllOtherMNodes(rsnm.getAllNodeIDs());
+
+            printRoutingTable();
+            for(Integer nodeID : allOtherMNodes){
+                System.out.print(" " + nodeID + " ");
+            }
+            System.out.println();
+
         }
         return null;
     }

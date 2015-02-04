@@ -1,14 +1,12 @@
 package node;
 
+import routing.RoutingEntry;
+import routing.RoutingTable;
 import transport.TCPConnection;
-import transport.TCPConnectionsCache;
 import transport.TCPServerThread;
 import util.CommandLineParser;
 import util.RegistryCommandsParser;
-import wireformats.Event;
-import wireformats.OverlayNodeSendsRegistration;
-import wireformats.Protocol;
-import wireformats.RegistryReportsRegistrationStatus;
+import wireformats.*;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -68,13 +66,21 @@ public class Registry implements Node, Runnable {
         }
     }
 
+    private RoutingTable getRoutingTableForIndex(int index, Object[] sortedIDs){
 
+        RoutingTable rTable = new RoutingTable();
 
-    private int[] getRoutingTableForIndex(int index, Integer[] sortedIDs){
+        int power = 1;
+        boolean first = true;
+        for(int i = 0; i < routingTableSize; i++){
+            int entryIndex = (index + power) % sortedIDs.length;
+            RoutingEntry rEntry = new RoutingEntry(messNode.get(sortedIDs[entryIndex]));
+            rTable.addEntry(rEntry);
+            power = (power << 1); // Increase by powers of 2
+            //todo: safe check for power
+        }
 
-
-
-        return null;
+        return rTable;
     }
 
     public synchronized void setup_overlay(int size_table){
@@ -83,13 +89,22 @@ public class Registry implements Node, Runnable {
         Arrays.sort(idsSorted);
 
         for(int i= 0; i < idsSorted.length; i++){
+            RoutingTable rTable = getRoutingTableForIndex(i, idsSorted);
+            MessagingNode tempMNode = messNode.get(idsSorted[i]);
+            tempMNode.setRoutingTable(rTable);
 
+            TCPConnection tempTCPC = tempMNode.getTCPC();
+
+            RegistrySendsNodeManifest rsnm = new RegistrySendsNodeManifest(rTable, messNode.keySet());
+
+            tempTCPC.sendData(rsnm.getBytes());
         }
-
     }
 
     public synchronized void list_routing_tables(){
-
+        for(Integer id : messNode.keySet()){
+            messNode.get(id).printRoutingTable();
+        }
     }
 
     public synchronized void start(){

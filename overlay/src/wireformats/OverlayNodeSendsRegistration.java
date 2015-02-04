@@ -33,8 +33,10 @@ public class OverlayNodeSendsRegistration implements Event {
 
             ipAddr = new String(ipaddr);
 
-
             portNum = dis.readInt();
+
+            bais.close();
+            dis.close();
 
         } catch (IOException e) {
             e.printStackTrace();

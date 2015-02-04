@@ -25,10 +25,10 @@ public class EventFactory {
             case Protocol.REGISTRY_REPORTS_REGISTRATION_STATUS:
                 mainE = new RegistryReportsRegistrationStatus(data);
                 break;
-            /*
             case Protocol.REGISTRY_SENDS_NODE_MANIFEST:
-                mainE = new RegistrySendsNodeManifest();
+                mainE = new RegistrySendsNodeManifest(data);
                 break;
+            /*
             case Protocol.NODE_REPORTS_OVERLAY_SETUP_STATUS:
                 mainE = new NodeReportsOverlaySetupStatus();
                 break;
