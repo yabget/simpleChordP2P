@@ -3,57 +3,36 @@ package node;
 import routing.RoutingEntry;
 import routing.RoutingTable;
 import transport.TCPConnection;
-import transport.TCPServerThread;
+import transport.TCPConnectionsCache;
 import util.CommandLineParser;
 import util.RegistryCommandsParser;
 import wireformats.*;
 
-import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.*;
 
 /**
  * Created by ydubale on 1/20/15.
  */
-public class Registry implements Node, Runnable {
+public class Registry implements Node{
 
     private static final int MAX_NODE_ID = 128;
 
     private ServerSocket ss;
-    private int portNum;
+    private int serverPort;
     private Hashtable<Integer, MessagingNode> messNode;
     private int routingTableSize = 3;
     private List<Integer> unUsedKeys;
+    private TCPConnectionsCache tcpCC;
 
     public Registry(int port){
-        this.portNum = port;
+        this.serverPort = port;
         messNode = new Hashtable<>();
+        tcpCC = new TCPConnectionsCache();
 
         unUsedKeys = new ArrayList<>();
         for(int i = 0; i < MAX_NODE_ID; i++){
             unUsedKeys.add(i);  //Populate array with IDs (0 - 127)
-        }
-    }
-
-    @Override
-    public void run() {
-        try {
-            ss = new ServerSocket(portNum, 10);
-            Socket tempSock;
-            while((tempSock = ss.accept()) != null){
-
-                int randomID = getRandomID();
-                if(randomID == -1){
-                    System.out.println("No more available IDs to assign. No longer accepting connections.");
-                    break;
-                }
-
-                messNode.put(randomID, new MessagingNode(randomID, tempSock));
-                (new Thread(new TCPServerThread(tempSock, this))).start();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
@@ -93,11 +72,11 @@ public class Registry implements Node, Runnable {
             MessagingNode tempMNode = messNode.get(idsSorted[i]);
             tempMNode.setRoutingTable(rTable);
 
-            TCPConnection tempTCPC = tempMNode.getTCPC();
+            //TCPConnection tempTCPC = tempMNode.getTCPC();
 
             RegistrySendsNodeManifest rsnm = new RegistrySendsNodeManifest(rTable, messNode.keySet());
 
-            tempTCPC.sendData(rsnm.getBytes());
+            //tempTCPC.sendData(rsnm.getBytes());
         }
     }
 
@@ -126,18 +105,6 @@ public class Registry implements Node, Runnable {
         return assignedID;
     }
 
-    private int getMessagingNodeID(String ip, int port){
-        for(Integer i : messNode.keySet()){
-            MessagingNode mNode = messNode.get(i);
-            if(mNode.getSocket().getPort() == port &&
-                    mNode.getSocket().getInetAddress().getHostAddress().equals(ip)){
-                return i;
-            }
-        }
-        return -1;
-    }
-
-
     public Hashtable<Integer, MessagingNode> getNodes(){
         return messNode;
     }
@@ -148,7 +115,7 @@ public class Registry implements Node, Runnable {
         if(event.getType() == Protocol.OVERLAY_NODE_SENDS_REGISTRATION){
             OverlayNodeSendsRegistration sendsReg = (OverlayNodeSendsRegistration) event;
 
-            int assignedID = getMessagingNodeID(sendsReg.getIpAddr(), sendsReg.getPort());
+            int assignedID = -1;//getMessagingNodeID(sendsReg.getIpAddr(), sendsReg.getPort());
 
             if(assignedID == -1){
                 System.out.println("NEVER COMMUNICATED WITH THIS NODE BEFORE");
@@ -164,6 +131,22 @@ public class Registry implements Node, Runnable {
         return null;
     }
 
+    @Override
+    public void startServer(int portNumber) {
+
+    }
+
+    @Override
+    public synchronized void addConnection(TCPConnection tcpC) {
+        if(tcpCC.connectionExists(tcpC)){
+            System.out.println("Connection with socket already exists.");
+            return;
+        }
+        int newID = getRandomID();
+        messNode.put(newID, new MessagingNode(newID));
+        tcpCC.addNewConn(newID, tcpC);
+    }
+
     public static void main(String args[]){
         CommandLineParser clp = new CommandLineParser();
 
@@ -171,9 +154,8 @@ public class Registry implements Node, Runnable {
 
         Registry registry = new Registry(clp.port_num);
 
-        Thread registryThread = new Thread(registry);
+        registry.startServer(clp.port_num);
 
-        registryThread.start();
 
         RegistryCommandsParser rcp = new RegistryCommandsParser(registry);
         Scanner scan = new Scanner(System.in);

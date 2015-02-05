@@ -1,5 +1,9 @@
 package transport;
 
+import node.Node;
+import wireformats.Event;
+import wireformats.EventFactory;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -10,22 +14,20 @@ import java.net.Socket;
  */
 public class TCPConnection {
 
-    private Socket socket;
+    private TCPSender tcpSender;
+    private TCPReceiver tcpReceiver;
 
-    public TCPConnection(Socket socket){
-        this.socket = socket;
+    public TCPConnection(Socket socket, Node node){
+        tcpSender = new TCPSender(socket);
+        tcpReceiver = new TCPReceiver(socket, node);
+
+        Thread receiveThread = new Thread(tcpReceiver);
+        receiveThread.start();
     }
 
     public void sendData(byte[] dataToSend){
-        TCPSender tcpS = new TCPSender(socket);
-        tcpS.sendData(dataToSend);
+        tcpSender.sendData(dataToSend);
     }
-
-    public byte[] recieveData() {
-        TCPReceiver tcpR = new TCPReceiver(socket);
-        return tcpR.receive();
-    }
-
 
     private class TCPSender{
         private DataOutputStream dos;
@@ -52,36 +54,40 @@ public class TCPConnection {
         }
     }
 
-    private class TCPReceiver {
+    private class TCPReceiver implements Runnable {
 
         private Socket socket;
         private DataInputStream dis;
+        private Node node;
 
-        public TCPReceiver(Socket socket) {
+        public TCPReceiver(Socket socket, Node node) {
             try {
                 this.socket = socket;
+                this.node = node;
                 dis = new DataInputStream(socket.getInputStream());
             }
             catch(IOException ioe){
                 ioe.printStackTrace();
             }
         }
-
-        public byte[] receive() {
-            byte[] data = null;
+        @Override
+        public void run() {
             try {
                 int dataLen;
-                if(socket != null){
+                while(socket != null){
                     dataLen = dis.readInt();
-                    data = new byte[dataLen];
+                    byte[] data = new byte[dataLen];
                     dis.readFully(data, 0, dataLen);
+
+                    EventFactory eventFac = EventFactory.getInstance();
+
+                    Event receivedEvent = eventFac.getEvent(data);
+                    node.onEvent(receivedEvent);
                 }
             }
             catch(IOException ioe ){
                 ioe.printStackTrace();
             }
-            return data;
         }
-
     }
 }

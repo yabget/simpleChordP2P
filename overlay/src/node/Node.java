@@ -1,5 +1,6 @@
 package node;
 
+import transport.TCPConnection;
 import wireformats.Event;
 
 /**
@@ -8,4 +9,8 @@ import wireformats.Event;
 public interface Node {
 
     public Event onEvent(Event event);
+    public void startServer(int portNumber);
+    public void addConnection(TCPConnection tcpC);
+
+
 }

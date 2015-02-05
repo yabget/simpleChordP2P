@@ -2,7 +2,10 @@ package routing;
 
 import node.MessagingNode;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -16,9 +19,7 @@ public class RoutingEntry {
 
     public RoutingEntry(MessagingNode messagingNode){
         this.nodeID = messagingNode.getID();
-        this.ipAddr = messagingNode.getSocket().getInetAddress().getHostAddress();
         this.lengthIP = (byte) ipAddr.length();
-        this.port = messagingNode.getSocket().getPort();
     }
 
     public String toString(){

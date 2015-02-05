@@ -1,57 +1,38 @@
 package transport;
 
-
-import node.MessagingNode;
 import node.Node;
-import wireformats.Event;
-import wireformats.EventFactory;
-import wireformats.OverlayNodeSendsRegistration;
 
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
  * Created by ydubale on 1/22/15.
  */
-public class TCPServerThread implements Runnable {
+public class TCPServerThread extends Thread {
 
-    private Socket socket;
-    private ServerSocket ss;
+    private int serverPort;
     private Node node;
 
-
-    public TCPServerThread(Socket socket, Node node){
-        this.socket = socket;
+    public TCPServerThread(Node node, int serverPort){
+        this.serverPort = serverPort;
         this.node = node;
     }
 
     @Override
     public void run() {
-        TCPConnection tcpC = new TCPConnection(socket);
+        try {
+            ServerSocket servSock = new ServerSocket(serverPort);
 
-        // Send initial message to registry
-        if(node != null && node instanceof MessagingNode){
-            OverlayNodeSendsRegistration sendReg = new OverlayNodeSendsRegistration(
-                    socket.getLocalAddress().getHostAddress(), socket.getLocalPort()
-            );
-            tcpC.sendData(sendReg.getBytes());
-            System.out.println("Trying to register myself to registry.");
-        }
-
-        while(true){
-            while(socket.isConnected()){
-                byte[] recievedD = tcpC.recieveData();
-                System.out.println("1st byte received (protocol): " + recievedD[0]);
-
-                Event receivedE = EventFactory.getInstance().getEvent(recievedD);
-                Event toReply = node.onEvent(receivedE);
-
-                if(toReply != null){
-                    tcpC.sendData(toReply.getBytes());
-                }
+            Socket socket;
+            while((socket = servSock.accept()) != null){
+                //Starts a new receiver thread to listen on the socket
+                TCPConnection newConnection = new TCPConnection(socket, node);
+                node.addConnection(newConnection);
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
     }
 
 }

@@ -1,10 +1,6 @@
 package transport;
 
-import node.MessagingNode;
-
-import java.net.Socket;
 import java.util.Hashtable;
-import java.util.Set;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -12,33 +8,21 @@ import java.util.Set;
 public class TCPConnectionsCache {
 
     private Hashtable<Integer, TCPConnection> tcpConns;
-    private Hashtable<Integer, MessagingNode> messNodes;
 
     public TCPConnectionsCache(){
         tcpConns = new Hashtable<>();
-        messNodes = new Hashtable<>();
     }
 
-
-    public void addNewConn(int nodeID, Socket socket){
-
-        TCPConnection tcpC = new TCPConnection(socket);
-
+    public void addNewConn(int nodeID, TCPConnection  tcpC){
         tcpConns.put(nodeID, tcpC);
-
     }
 
-    public Hashtable<Integer, MessagingNode> getAllMessagingNodes(){
-        return messNodes;
+    public boolean connectionExists(TCPConnection tcpC){
+        return tcpConns.containsValue(tcpC);
     }
 
     public Hashtable<Integer, TCPConnection> getAllTCPConnections(){
         return tcpConns;
     }
-
-
-
-
-
 
 }
