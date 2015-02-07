@@ -1,11 +1,14 @@
 package routing;
 
 import node.MessagingNode;
+import transport.TCPConnection;
+import transport.TCPConnectionsCache;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.Socket;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -17,20 +20,37 @@ public class RoutingEntry {
     String ipAddr;
     int port;
 
-    public RoutingEntry(MessagingNode messagingNode){
-        this.nodeID = messagingNode.getID();
+    public RoutingEntry(int nodeID, String ipAddress, int port){
+        this.nodeID = nodeID;
+        this.ipAddr = ipAddress;
+        this.port = port;
         this.lengthIP = (byte) ipAddr.length();
+    }
+
+    public RoutingEntry(int nodeID, TCPConnection tcpC){
+        this.nodeID = nodeID;
+        this.ipAddr = tcpC.getIP();
+        this.port = tcpC.getPort();
+        this.lengthIP = (byte) ipAddr.length();
+    }
+
+    public RoutingEntry(int nodeID, byte lengthIP, String ipAddress, int port){
+        this.nodeID = nodeID;
+        this.ipAddr = ipAddress;
+        this.port = port;
+        this.lengthIP = lengthIP;
+    }
+
+    public void addSelfToTCPConnectionCache(TCPConnectionsCache tcpConnectionsCache){
+        try {
+            tcpConnectionsCache.addNewConn(nodeID, new TCPConnection(new Socket(ipAddr, port), new MessagingNode(nodeID)));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public String toString(){
         return nodeID + "\t--- " + lengthIP + "\t" + ipAddr + "\t" + "\t" + port;
-    }
-
-    public RoutingEntry(int nodeID, byte lengthIP, String ipAddr, int port){
-        this.nodeID = nodeID;
-        this.lengthIP = lengthIP;
-        this.ipAddr = ipAddr;
-        this.port = port;
     }
 
     public byte[] getBytes(){

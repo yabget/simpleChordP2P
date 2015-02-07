@@ -20,9 +20,23 @@ public class TCPConnection {
     public TCPConnection(Socket socket, Node node){
         tcpSender = new TCPSender(socket);
         tcpReceiver = new TCPReceiver(socket, node);
+    }
 
+    public void startReceiveThread(){
         Thread receiveThread = new Thread(tcpReceiver);
         receiveThread.start();
+    }
+
+    public String getIP(){
+        return tcpSender.socket.getInetAddress().getHostAddress();
+    }
+
+    public int getPort(){
+        return tcpSender.socket.getPort();
+    }
+
+    public String toString(){
+        return getIP() + " " + getPort();
     }
 
     public void sendData(byte[] dataToSend){
@@ -30,19 +44,17 @@ public class TCPConnection {
     }
 
     private class TCPSender{
-        private DataOutputStream dos;
+
+        private Socket socket;
 
         public TCPSender(Socket socket){
-            try{
-                dos = new DataOutputStream(socket.getOutputStream());
-            }
-            catch(IOException ioe){
-                ioe.printStackTrace();
-            }
+            this.socket = socket;
         }
 
         public void sendData(byte[] dataToSend){
             try{
+                DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+
                 int dataLen = dataToSend.length;
                 dos.writeInt(dataLen);
                 dos.write(dataToSend, 0, dataLen);
@@ -57,32 +69,30 @@ public class TCPConnection {
     private class TCPReceiver implements Runnable {
 
         private Socket socket;
-        private DataInputStream dis;
         private Node node;
 
         public TCPReceiver(Socket socket, Node node) {
-            try {
-                this.socket = socket;
-                this.node = node;
-                dis = new DataInputStream(socket.getInputStream());
-            }
-            catch(IOException ioe){
-                ioe.printStackTrace();
-            }
+            this.socket = socket;
+            this.node = node;
         }
+
         @Override
         public void run() {
             try {
                 int dataLen;
+                DataInputStream dis = new DataInputStream(socket.getInputStream());
+
+                EventFactory eventFac = EventFactory.getInstance();
+
                 while(socket != null){
                     dataLen = dis.readInt();
                     byte[] data = new byte[dataLen];
                     dis.readFully(data, 0, dataLen);
 
-                    EventFactory eventFac = EventFactory.getInstance();
-
                     Event receivedEvent = eventFac.getEvent(data);
+                    System.out.println("Calling on event");
                     node.onEvent(receivedEvent);
+                    System.out.println("Returned from on Event");
                 }
             }
             catch(IOException ioe ){

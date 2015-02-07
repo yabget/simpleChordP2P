@@ -9,26 +9,27 @@ import java.net.Socket;
 /**
  * Created by ydubale on 1/22/15.
  */
-public class TCPServerThread extends Thread {
+public class TCPServerThread implements Runnable {
 
-    private int serverPort;
+    private ServerSocket serverSocket;
     private Node node;
 
-    public TCPServerThread(Node node, int serverPort){
-        this.serverPort = serverPort;
+    public TCPServerThread(Node node, ServerSocket serverSocket){
+        this.serverSocket = serverSocket;
         this.node = node;
     }
 
     @Override
     public void run() {
         try {
-            ServerSocket servSock = new ServerSocket(serverPort);
-
+            System.out.println("Server is running on " + serverSocket.getLocalPort());
             Socket socket;
-            while((socket = servSock.accept()) != null){
+            while((socket = serverSocket.accept()) != null){
                 //Starts a new receiver thread to listen on the socket
+                System.out.println("Accepted new connection");
                 TCPConnection newConnection = new TCPConnection(socket, node);
-                node.addConnection(newConnection);
+                newConnection.startReceiveThread();
+
             }
         } catch (IOException e) {
             e.printStackTrace();

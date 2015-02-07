@@ -4,11 +4,14 @@ import routing.RoutingEntry;
 import routing.RoutingTable;
 import transport.TCPConnection;
 import transport.TCPConnectionsCache;
+import transport.TCPServerThread;
 import util.CommandLineParser;
 import util.RegistryCommandsParser;
 import wireformats.*;
 
+import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.*;
 
 /**
@@ -53,7 +56,10 @@ public class Registry implements Node{
         boolean first = true;
         for(int i = 0; i < routingTableSize; i++){
             int entryIndex = (index + power) % sortedIDs.length;
-            RoutingEntry rEntry = new RoutingEntry(messNode.get(sortedIDs[entryIndex]));
+
+            int nodeID = (Integer) sortedIDs[entryIndex];
+
+            RoutingEntry rEntry = new RoutingEntry(nodeID, tcpCC.getTCPConnection(nodeID));
             rTable.addEntry(rEntry);
             power = (power << 1); // Increase by powers of 2
             //todo: safe check for power
@@ -64,19 +70,22 @@ public class Registry implements Node{
 
     public synchronized void setup_overlay(int size_table){
         routingTableSize = size_table;
+        //todo: fix object array
         Object[] idsSorted = messNode.keySet().toArray();
         Arrays.sort(idsSorted);
 
         for(int i= 0; i < idsSorted.length; i++){
-            RoutingTable rTable = getRoutingTableForIndex(i, idsSorted);
-            MessagingNode tempMNode = messNode.get(idsSorted[i]);
-            tempMNode.setRoutingTable(rTable);
 
-            //TCPConnection tempTCPC = tempMNode.getTCPC();
+            int currID = (Integer) idsSorted[i];
+
+            RoutingTable rTable = getRoutingTableForIndex(i, idsSorted);
+            MessagingNode tempMNode = messNode.get(currID);
+            tempMNode.setRoutingTable(rTable);
 
             RegistrySendsNodeManifest rsnm = new RegistrySendsNodeManifest(rTable, messNode.keySet());
 
-            //tempTCPC.sendData(rsnm.getBytes());
+            tcpCC.sendEvent(currID, rsnm);
+
         }
     }
 
@@ -110,41 +119,60 @@ public class Registry implements Node{
     }
 
     @Override
-    public synchronized Event onEvent(Event event) {
+    public synchronized void onEvent(Event event) {
 
-        if(event.getType() == Protocol.OVERLAY_NODE_SENDS_REGISTRATION){
+        if(event == null){
+            System.out.println("EVENT IS NULL YO!");
+        }
+        else if(event.getType() == Protocol.OVERLAY_NODE_SENDS_REGISTRATION){
             OverlayNodeSendsRegistration sendsReg = (OverlayNodeSendsRegistration) event;
 
-            int assignedID = -1;//getMessagingNodeID(sendsReg.getIpAddr(), sendsReg.getPort());
+            int assignedID = getRandomID();
+
+            messNode.put(assignedID, new MessagingNode(assignedID));
+
+
+
+            try {
+                System.out.println("I receieved " + sendsReg.getIpAddr() + " " + sendsReg.getPort());
+                tcpCC.addNewConn(assignedID, new TCPConnection(new Socket(sendsReg.getIpAddr(), sendsReg.getPort()), this));
+            } catch (IOException e) {
+                //e.printStackTrace();
+                System.out.println("BOOOOOOOOOOO");
+            }
+
 
             if(assignedID == -1){
                 System.out.println("NEVER COMMUNICATED WITH THIS NODE BEFORE");
             }
 
-            String infoStr = "Registration request successful. The number of messaging nodes currently constituting the overlay is ("+ messNode.size() +")";
+            String infoStr = "Registration request successful. The number of messaging nodes" +
+                    " currently constituting the overlay is ("+ messNode.size() +")";
 
             RegistryReportsRegistrationStatus regRRS = new RegistryReportsRegistrationStatus(assignedID, infoStr.toString());
 
-            return regRRS;
+            System.out.println("Sending node it's id: " + assignedID);
+
+            tcpCC.sendEvent(assignedID, regRRS);
 
         }
-        return null;
+        else if(event.getType() == Protocol.NODE_REPORTS_OVERLAY_SETUP_STATUS){
+            NodeReportsOverlaySetupStatus nross = (NodeReportsOverlaySetupStatus) event;
+
+            System.out.println(nross.getInfoString());
+
+        }
+
     }
 
     @Override
     public void startServer(int portNumber) {
-
-    }
-
-    @Override
-    public synchronized void addConnection(TCPConnection tcpC) {
-        if(tcpCC.connectionExists(tcpC)){
-            System.out.println("Connection with socket already exists.");
-            return;
+        try {
+            Thread serverThread = new Thread(new TCPServerThread(this, new ServerSocket(portNumber)));
+            serverThread.start();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        int newID = getRandomID();
-        messNode.put(newID, new MessagingNode(newID));
-        tcpCC.addNewConn(newID, tcpC);
     }
 
     public static void main(String args[]){
@@ -155,7 +183,6 @@ public class Registry implements Node{
         Registry registry = new Registry(clp.port_num);
 
         registry.startServer(clp.port_num);
-
 
         RegistryCommandsParser rcp = new RegistryCommandsParser(registry);
         Scanner scan = new Scanner(System.in);
