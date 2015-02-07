@@ -156,7 +156,9 @@ public class Registry implements Node{
         else if(event.getType() == Protocol.NODE_REPORTS_OVERLAY_SETUP_STATUS){
             NodeReportsOverlaySetupStatus nross = (NodeReportsOverlaySetupStatus) event;
 
-            System.out.println(nross.getInfoString());
+            if(nross.isSuccessful()){
+                System.out.println("Registry now ready to initiate tasks");
+            }
 
         }
 

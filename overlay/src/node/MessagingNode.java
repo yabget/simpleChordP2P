@@ -12,9 +12,7 @@ import wireformats.*;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashSet;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -24,14 +22,22 @@ public class MessagingNode implements Node {
 
     private int ID;
     private RoutingTable routingTable;
-    private Set<Integer> allOtherMNodes;
+    private ArrayList<Integer> allOtherMNodes;
     private TCPConnection registryConnection = null;
     private TCPConnectionsCache tcpCC;
     private ServerSocket serverSocket;
 
+    private int sendTracker = 0;
+    private int receiveTracker = 0;
+
+    private int relayTracker = 0;
+
+    private long sendSummation = 0;
+    private long receiveSummation = 0;
+
     public MessagingNode(String registry_ip, int registry_port) throws IOException {
         routingTable = new RoutingTable();
-        allOtherMNodes = new HashSet<>();
+        allOtherMNodes = new ArrayList<>();
         tcpCC = new TCPConnectionsCache();
 
         serverSocket = new ServerSocket(0);
@@ -51,13 +57,13 @@ public class MessagingNode implements Node {
     public MessagingNode(int nodeID){
         this.ID = nodeID;
         routingTable = new RoutingTable();
-        allOtherMNodes = new HashSet<>();
+        allOtherMNodes = new ArrayList<>();
         tcpCC = new TCPConnectionsCache();
     }
 
     public MessagingNode(){
         routingTable = new RoutingTable();
-        allOtherMNodes = new HashSet<>();
+        allOtherMNodes = new ArrayList<>();
         tcpCC = new TCPConnectionsCache();
     }
 
@@ -65,7 +71,7 @@ public class MessagingNode implements Node {
         routingTable = rt;
     }
 
-    public void setAllOtherMNodes(Set<Integer> allOtherMNodes){
+    public void setAllOtherMNodes(ArrayList<Integer> allOtherMNodes){
         this.allOtherMNodes = allOtherMNodes;
     }
 
@@ -77,10 +83,6 @@ public class MessagingNode implements Node {
         System.out.println();
     }
 
-    public int getID(){
-        return ID;
-    }
-
     private void setID(int id){
         this.ID = id;
     }
@@ -88,6 +90,36 @@ public class MessagingNode implements Node {
     public String toString(){
         return ID + " ";
     }
+
+    private void startSendingToNodes(int numPacketsToSend){
+        Random rand = new Random();
+        int numNodes = allOtherMNodes.size();
+
+        for(int i=0; i < numPacketsToSend; i++){
+
+            int payload = rand.nextInt();
+
+            int randNodeIDIndex = rand.nextInt(numNodes);
+
+            int destinationID = allOtherMNodes.get(randNodeIDIndex);
+
+            sendSummation += payload;
+
+            OverlayNodeSendsData onsd = new OverlayNodeSendsData(destinationID, ID, payload, new ArrayList<Integer>());
+
+            sendToBestNode(destinationID, onsd);
+            sendTracker++;
+
+        }
+    }
+
+    private void sendToBestNode(int destinationID, OverlayNodeSendsData onsd) {
+        int bestNode = routingTable.determineBestNode(destinationID);
+
+        tcpCC.sendEvent(bestNode, onsd);
+    }
+
+
 
     @Override
     public synchronized void onEvent(Event event) {
@@ -122,9 +154,30 @@ public class MessagingNode implements Node {
         else if(eventType == Protocol.REGISTRY_REQUESTS_TASK_INITIATE){
             RegistryRequestsTaskInitiate rrti = (RegistryRequestsTaskInitiate) event;
 
-            System.out.println("You want me to send " + rrti.getNumPacketsToSend() + " messages????????? WHHHATTT");
+            startSendingToNodes(rrti.getNumPacketsToSend());
+
+        }
+        else if(eventType == Protocol.OVERLAY_NODE_SENDS_DATA){
+            OverlayNodeSendsData onsd = (OverlayNodeSendsData) event;
 
 
+            if(onsd.amInTrace(ID)){
+                System.out.println("SOMETHING WENT WRONG, I GOT PACKET AGAIN (i.e. I'm already in trace.");
+                return;
+            }
+
+            //If i'm not the destination
+            if(!onsd.isDestination(ID)){
+                onsd.addToTrace(ID);
+                sendToBestNode(onsd.getDestinationID(), onsd);
+                relayTracker++;
+                return;
+            }
+
+            int payload = onsd.getPayload();
+
+            receiveSummation += payload;
+            receiveTracker++;
         }
     }
 

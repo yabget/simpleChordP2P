@@ -49,6 +49,10 @@ public class RoutingEntry {
         }
     }
 
+    public int getNodeID(){
+        return nodeID;
+    }
+
     public String toString(){
         return nodeID + "\t--- " + lengthIP + "\t" + ipAddr + "\t" + "\t" + port;
     }

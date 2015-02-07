@@ -4,8 +4,7 @@ import routing.RoutingEntry;
 import routing.RoutingTable;
 
 import java.io.*;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -14,11 +13,11 @@ public class RegistrySendsNodeManifest implements Event, Runnable {
 
     private RoutingTable routingTable;
     private byte routingTableSize;
-    private Set<Integer> allNodeIDs;
+    private ArrayList<Integer> allNodeIDs;
     private int numNodes;
     private byte type = Protocol.REGISTRY_SENDS_NODE_MANIFEST;
 
-    public RegistrySendsNodeManifest(RoutingTable routingTable, Set<Integer> allNodeIDs){
+    public RegistrySendsNodeManifest(RoutingTable routingTable, ArrayList<Integer> allNodeIDs){
         this.routingTable = routingTable;
         routingTableSize = routingTable.getTableSize();
         this.allNodeIDs = allNodeIDs;
@@ -29,7 +28,7 @@ public class RegistrySendsNodeManifest implements Event, Runnable {
         return routingTable;
     }
 
-    public Set<Integer> getAllNodeIDs() {
+    public ArrayList<Integer> getAllNodeIDs() {
         return allNodeIDs;
     }
 
@@ -60,7 +59,7 @@ public class RegistrySendsNodeManifest implements Event, Runnable {
                 routingTable.addEntry(tempREntry);
             }
 
-            allNodeIDs = new HashSet<Integer>();
+            allNodeIDs = new ArrayList<>();
 
             numNodes = dis.readByte();
 
