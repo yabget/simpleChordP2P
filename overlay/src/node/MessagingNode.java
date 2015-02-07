@@ -45,11 +45,7 @@ public class MessagingNode implements Node {
                 regSocket.getLocalAddress().getHostAddress(), serverSocket.getLocalPort()
         );
 
-        System.out.println("I am sending registry " +
-                serverSocket.getInetAddress().getHostAddress() + " " + serverSocket.getLocalPort());
-
         registryConnection.sendData(sendReg.getBytes());
-        System.out.println("Sent registration request.");
     }
 
     public MessagingNode(int nodeID){
@@ -110,14 +106,8 @@ public class MessagingNode implements Node {
             setRoutingTable(rsnm.getRoutingTable());
             setAllOtherMNodes(rsnm.getAllNodeIDs());
 
-            printRoutingTable();
-            for(Integer nodeID : allOtherMNodes){
-                System.out.print(" " + nodeID + " ");
-            }
-            System.out.println();
-
             for(RoutingEntry routingEntry : routingTable.getEntries()){
-                System.out.println("Connecting to " +  routingEntry);
+                //Connection to each entry
                 routingEntry.addSelfToTCPConnectionCache(tcpCC);
             }
 
@@ -126,9 +116,15 @@ public class MessagingNode implements Node {
             NodeReportsOverlaySetupStatus nross = new NodeReportsOverlaySetupStatus(ID, successString);
 
             System.out.print(tcpCC);
-            System.out.println("Connected to nodes in my routing table");
 
             registryConnection.sendData(nross.getBytes());
+        }
+        else if(eventType == Protocol.REGISTRY_REQUESTS_TASK_INITIATE){
+            RegistryRequestsTaskInitiate rrti = (RegistryRequestsTaskInitiate) event;
+
+            System.out.println("You want me to send " + rrti.getNumPacketsToSend() + " messages????????? WHHHATTT");
+
+
         }
     }
 

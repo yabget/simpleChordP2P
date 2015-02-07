@@ -95,8 +95,11 @@ public class Registry implements Node{
         }
     }
 
-    public synchronized void start(){
-
+    public synchronized void start(int numMessagesToSend){
+        RegistryRequestsTaskInitiate rrti = new RegistryRequestsTaskInitiate(numMessagesToSend);
+        for(Integer id : messNode.keySet()){
+            tcpCC.sendEvent(id, rrti);
+        }
     }
 
     // Helpers
@@ -131,27 +134,21 @@ public class Registry implements Node{
 
             messNode.put(assignedID, new MessagingNode(assignedID));
 
-
-
             try {
-                System.out.println("I receieved " + sendsReg.getIpAddr() + " " + sendsReg.getPort());
                 tcpCC.addNewConn(assignedID, new TCPConnection(new Socket(sendsReg.getIpAddr(), sendsReg.getPort()), this));
             } catch (IOException e) {
                 //e.printStackTrace();
-                System.out.println("BOOOOOOOOOOO");
+                System.out.println("Problem in onEvent of Registry, can't accept connection probably.");
             }
 
-
             if(assignedID == -1){
-                System.out.println("NEVER COMMUNICATED WITH THIS NODE BEFORE");
+                System.out.println("NEVER COMMUNICATED WITH THIS NODE BEFORE. Id is -1.");
             }
 
             String infoStr = "Registration request successful. The number of messaging nodes" +
                     " currently constituting the overlay is ("+ messNode.size() +")";
 
             RegistryReportsRegistrationStatus regRRS = new RegistryReportsRegistrationStatus(assignedID, infoStr.toString());
-
-            System.out.println("Sending node it's id: " + assignedID);
 
             tcpCC.sendEvent(assignedID, regRRS);
 

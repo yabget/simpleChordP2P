@@ -90,9 +90,9 @@ public class TCPConnection {
                     dis.readFully(data, 0, dataLen);
 
                     Event receivedEvent = eventFac.getEvent(data);
-                    System.out.println("Calling on event");
+
                     node.onEvent(receivedEvent);
-                    System.out.println("Returned from on Event");
+
                 }
             }
             catch(IOException ioe ){

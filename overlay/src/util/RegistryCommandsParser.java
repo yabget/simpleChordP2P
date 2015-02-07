@@ -43,7 +43,6 @@ public class RegistryCommandsParser {
             registry.list_messaging_nodes();
         }
         else if(command.equals(SETUP_OVERLAY)){
-
             int size_table = 3;
             if(args.length == 2){
                 try{
@@ -59,7 +58,16 @@ public class RegistryCommandsParser {
             registry.list_routing_tables();
         }
         else if(command.equals(START)){
-            registry.start();
+            int numMessagesToSend = 3;
+            if(args.length == 2){
+                try{
+                    numMessagesToSend = Integer.parseInt(args[1]);
+                }
+                catch(NumberFormatException nfe){
+                    System.out.println("Unable to parse setup-overlay integer. Using default value of 3");
+                }
+            }
+            registry.start(numMessagesToSend);
         }
         else{
             printOptions();

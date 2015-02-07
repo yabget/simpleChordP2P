@@ -22,14 +22,11 @@ public class TCPServerThread implements Runnable {
     @Override
     public void run() {
         try {
-            System.out.println("Server is running on " + serverSocket.getLocalPort());
             Socket socket;
             while((socket = serverSocket.accept()) != null){
                 //Starts a new receiver thread to listen on the socket
-                System.out.println("Accepted new connection");
                 TCPConnection newConnection = new TCPConnection(socket, node);
                 newConnection.startReceiveThread();
-
             }
         } catch (IOException e) {
             e.printStackTrace();
