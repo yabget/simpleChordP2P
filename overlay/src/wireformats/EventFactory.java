@@ -19,6 +19,9 @@ public class EventFactory {
         byte protocol = data[0];
 
         switch (protocol) {
+            case Protocol.OVERLAY_NODE_SENDS_DATA:
+                mainE = new OverlayNodeSendsData(data);
+                break;
             case Protocol.OVERLAY_NODE_SENDS_REGISTRATION:
                 mainE = new OverlayNodeSendsRegistration(data);
                 break;
@@ -34,17 +37,17 @@ public class EventFactory {
             case Protocol.REGISTRY_REQUESTS_TASK_INITIATE:
                 mainE = new RegistryRequestsTaskInitiate(data);
                 break;
-            /*
             case Protocol.OVERLAY_NODE_REPORTS_TASK_FINISHED:
-                mainE = new OverlayNodeReportsTaskFinished();
+                mainE = new OverlayNodeReportsTaskFinished(data);
                 break;
             case Protocol.REGISTRY_REQUESTS_TRAFFIC_SUMMARY:
-                mainE = new RegistryRequestsTrafficSummary();
+                mainE = new RegistryRequestsTrafficSummary(data);
                 break;
             case Protocol.OVERLAY_NODE_REPORTS_TRAFFIC_SUMMARY:
-                mainE = new OverlayNodeReportsTrafficSummary();
+                mainE = new OverlayNodeReportsTrafficSummary(data);
                 break;
-                */
+            default:
+                System.out.println("ERROR IN FACTORY!");
         }
 
         return mainE;

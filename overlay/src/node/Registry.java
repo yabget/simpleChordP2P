@@ -27,11 +27,16 @@ public class Registry implements Node{
     private int routingTableSize = 3;
     private List<Integer> unUsedKeys;
     private TCPConnectionsCache tcpCC;
+    private int numCompletedNodes;
+    private int numTrafficReceived = 0;
 
-    public Registry(int port){
+    public Registry(int port) throws IOException {
         this.serverPort = port;
         messNode = new Hashtable<>();
         tcpCC = new TCPConnectionsCache();
+
+        Thread serverThread = new Thread(new TCPServerThread(this, new ServerSocket(serverPort)));
+        serverThread.start();
 
         unUsedKeys = new ArrayList<>();
         for(int i = 0; i < MAX_NODE_ID; i++){
@@ -79,13 +84,21 @@ public class Registry implements Node{
             int currID = (Integer) idsSorted[i];
 
             RoutingTable rTable = getRoutingTableForIndex(i, idsSorted);
+
             MessagingNode tempMNode = messNode.get(currID);
+
             tempMNode.setRoutingTable(rTable);
 
-            RegistrySendsNodeManifest rsnm = new RegistrySendsNodeManifest(rTable, messNode.keySet());
+            RegistrySendsNodeManifest rsnm = new RegistrySendsNodeManifest(rTable, new ArrayList<>(messNode.keySet()));
 
             tcpCC.sendEvent(currID, rsnm);
 
+        }
+    }
+
+    private void sendToAllNodes(Event event){
+        for(Integer id : messNode.keySet()){
+            tcpCC.sendEvent(id, event);
         }
     }
 
@@ -97,9 +110,7 @@ public class Registry implements Node{
 
     public synchronized void start(int numMessagesToSend){
         RegistryRequestsTaskInitiate rrti = new RegistryRequestsTaskInitiate(numMessagesToSend);
-        for(Integer id : messNode.keySet()){
-            tcpCC.sendEvent(id, rrti);
-        }
+        sendToAllNodes(rrti);
     }
 
     // Helpers
@@ -116,6 +127,33 @@ public class Registry implements Node{
 
         return assignedID;
     }
+
+    private void printTrafficSummaryForAll(){
+        System.out.println("\nNode\tPackets Sent\tPackets Recv\t" +
+                "Packets Relayed\tSum Values Sent\t\tSum Values Received");
+
+        int sumPacketSent = 0;
+        int sumPacketRecv = 0;
+        int sumPacketRelay = 0;
+        long sumValuesSent = 0;
+        long sumValuesRecv = 0;
+
+        for(Integer nodeID : messNode.keySet()){
+            MessagingNode mNode = messNode.get(nodeID);
+
+            sumPacketSent += mNode.getSendTracker();
+            sumPacketRecv += mNode.getReceiveTracker();
+            sumPacketRelay += mNode.getRelayTracker();
+            sumValuesSent += mNode.getSendSummation();
+            sumValuesRecv += mNode.getReceiveSummation();
+
+            System.out.println(nodeID + "\t" + mNode.getTrafficSummary());
+        }
+
+        System.out.println("Sum\t" + sumPacketSent + "\t\t" + sumPacketRecv + "\t\t" + sumPacketRelay +
+                "\t\t" + sumValuesSent + "\t\t" + sumValuesRecv);
+    }
+
 
     public Hashtable<Integer, MessagingNode> getNodes(){
         return messNode;
@@ -159,18 +197,45 @@ public class Registry implements Node{
             if(nross.isSuccessful()){
                 System.out.println("Registry now ready to initiate tasks");
             }
-
         }
+        else if(event.getType() == Protocol.OVERLAY_NODE_REPORTS_TASK_FINISHED){
+            OverlayNodeReportsTaskFinished onrtf = (OverlayNodeReportsTaskFinished) event;
 
-    }
+            numCompletedNodes++;
+            System.out.println(numCompletedNodes + " Finished");
 
-    @Override
-    public void startServer(int portNumber) {
-        try {
-            Thread serverThread = new Thread(new TCPServerThread(this, new ServerSocket(portNumber)));
-            serverThread.start();
-        } catch (IOException e) {
-            e.printStackTrace();
+            int numNodesInOverlay = messNode.size();
+
+            if(numCompletedNodes == numNodesInOverlay){
+                RegistryRequestsTrafficSummary rrts = new RegistryRequestsTrafficSummary();
+                try {
+                    System.out.println("Count to 20 seconds!");
+                    Thread.sleep(20000);
+                    System.out.println("Now sending task finished to all nodes!");
+
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                sendToAllNodes(rrts);
+            }
+        }
+        else if(event.getType() == Protocol.OVERLAY_NODE_REPORTS_TRAFFIC_SUMMARY){
+            OverlayNodeReportsTrafficSummary onrts = (OverlayNodeReportsTrafficSummary) event;
+
+            MessagingNode currMNode = messNode.get(onrts.getNodeID());
+
+            currMNode.setSendTracker(onrts.getTotalSent());
+            currMNode.setRelayTracker(onrts.getTotalRelayed());
+            currMNode.setSendSummation(onrts.getSumSent());
+            currMNode.setReceiveTracker(onrts.getTotalReceived());
+            currMNode.setReceiveSummation(onrts.getSumReceived());
+
+            numTrafficReceived++;
+
+            int numNodesInOverlay = messNode.size();
+            if(numTrafficReceived == numNodesInOverlay){
+                printTrafficSummaryForAll();
+            }
         }
     }
 
@@ -179,9 +244,14 @@ public class Registry implements Node{
 
         clp.validateRegisCLA(args);
 
-        Registry registry = new Registry(clp.port_num);
+        Registry registry = null;
+        try {
+            registry = new Registry(clp.port_num);
+        } catch (IOException e) {
+            System.out.println("Unable to start registry!");
+            e.printStackTrace();
+        }
 
-        registry.startServer(clp.port_num);
 
         RegistryCommandsParser rcp = new RegistryCommandsParser(registry);
         Scanner scan = new Scanner(System.in);

@@ -8,6 +8,5 @@ import wireformats.Event;
 public interface Node {
 
     public void onEvent(Event event);
-    public void startServer(int portNumber);
 
 }

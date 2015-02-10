@@ -18,14 +18,15 @@ public class RoutingTable {
     }
 
     public void addEntry(RoutingEntry entry){
-        int lastIndex = entries.size()-1;
-        int lastNodeID = entries.get(lastIndex).getNodeID();
+        if(entries.size() > 0){
+            int lastIndex = entries.size()-1;
+            int lastNodeID = entries.get(lastIndex).getNodeID();
 
-        if(entry.getNodeID() < lastNodeID){
-            wrapsAround = true;
-            idWrapOccursAt = entry.getNodeID();
+            if(entry.getNodeID() < lastNodeID){
+                wrapsAround = true;
+                idWrapOccursAt = entry.getNodeID();
+            }
         }
-
         entries.add(entry);
     }
 
@@ -46,26 +47,27 @@ public class RoutingTable {
         return false;
     }
 
+    private boolean isInBetween(int destination, int leftValue, int rightValue){
+        return (destination > leftValue) && (destination < rightValue);
+    }
+
     public int determineBestNode(int destinationID) {
         int bestID = entries.get(0).getNodeID();
 
-        for(RoutingEntry routingEntry : entries){
-            int currNodeID = routingEntry.getNodeID();
+        if(bestID == destinationID){
+            return bestID;
+        }
 
-            if(currNodeID == destinationID){
-                return destinationID;
+        for(int i= 0; i < entries.size()-1; i++){
+            int firstNode = entries.get(i).getNodeID();
+            int secondNode = entries.get(i+1).getNodeID();
+
+            if(secondNode == destinationID){
+                return secondNode;
             }
 
-            if(wrapsAround){
-                if(currNodeID == idWrapOccursAt){
-                    break;
-                }
-                bestID = currNodeID;
-            }
-            else {
-                if(currNodeID < destinationID){
-                    bestID = currNodeID;
-                }
+            if(isInBetween(destinationID, firstNode, secondNode)){
+                bestID = firstNode;
             }
         }
 

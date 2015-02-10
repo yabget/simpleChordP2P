@@ -39,6 +39,7 @@ public class TCPConnection {
         return getIP() + " " + getPort();
     }
 
+    //todo: pass in Event
     public void sendData(byte[] dataToSend){
         tcpSender.sendData(dataToSend);
     }
@@ -53,12 +54,22 @@ public class TCPConnection {
 
         public void sendData(byte[] dataToSend){
             try{
+                //System.out.println("About to send");
                 DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
 
+                //System.out.println("Got the DOS");
                 int dataLen = dataToSend.length;
-                dos.writeInt(dataLen);
-                dos.write(dataToSend, 0, dataLen);
+
+                synchronized (dos){
+                    dos.writeInt(dataLen);
+                    dos.write(dataToSend, 0, dataLen);
+                }
+                //System.out.println("Wrote the length");
+
+                //System.out.println("Wrote the data");
                 dos.flush();
+                //System.out.println("SENT!");
+
             }
             catch (IOException ioe){
                 ioe.printStackTrace();
@@ -80,6 +91,7 @@ public class TCPConnection {
         public void run() {
             try {
                 int dataLen;
+
                 DataInputStream dis = new DataInputStream(socket.getInputStream());
 
                 EventFactory eventFac = EventFactory.getInstance();
@@ -92,6 +104,7 @@ public class TCPConnection {
                     Event receivedEvent = eventFac.getEvent(data);
 
                     node.onEvent(receivedEvent);
+
 
                 }
             }

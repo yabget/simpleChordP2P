@@ -25,6 +25,7 @@ public class TCPServerThread implements Runnable {
             Socket socket;
             while((socket = serverSocket.accept()) != null){
                 //Starts a new receiver thread to listen on the socket
+                System.out.println("Accepted new connection!");
                 TCPConnection newConnection = new TCPConnection(socket, node);
                 newConnection.startReceiveThread();
             }

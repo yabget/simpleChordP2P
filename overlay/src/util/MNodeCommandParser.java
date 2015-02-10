@@ -1,5 +1,6 @@
 package util;
 
+import node.MessagingNode;
 import wireformats.Event;
 import wireformats.OverlayNodeSendsDeregistration;
 
@@ -15,8 +16,10 @@ public class MNodeCommandParser {
     public static final String EXIT_OVERALY = "exit-overlay";
     public static final String HELP = "help";
 
-    public MNodeCommandParser(){
+    private MessagingNode mNode;
 
+    public MNodeCommandParser(MessagingNode mNode){
+        this.mNode = mNode;
     }
 
     private void printOptions() throws UnknownHostException {
@@ -29,7 +32,7 @@ public class MNodeCommandParser {
 
     public Event parseArgument(String command){
         if(command.equals(PRINT_COUNTERS_AND_DIAGNOSTICS)){
-
+            mNode.print_counters_and_diagnostics();
         }
         else if(command.equals(EXIT_OVERALY)){
             return (Event)new OverlayNodeSendsDeregistration();

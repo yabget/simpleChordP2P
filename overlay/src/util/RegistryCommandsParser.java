@@ -58,7 +58,7 @@ public class RegistryCommandsParser {
             registry.list_routing_tables();
         }
         else if(command.equals(START)){
-            int numMessagesToSend = 3;
+            int numMessagesToSend = 2;
             if(args.length == 2){
                 try{
                     numMessagesToSend = Integer.parseInt(args[1]);

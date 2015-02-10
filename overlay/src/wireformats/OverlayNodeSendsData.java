@@ -26,6 +26,10 @@ public class OverlayNodeSendsData implements Event {
         this.traceLength = trace.size();
     }
 
+    public String toString(){
+        return "Src: " + sourceID + "\tDest: " + destinationID + "\tLoad: " + payload + "\tTrace: " + trace;
+    }
+
     public int getPayload(){
         return payload;
     }
@@ -61,7 +65,9 @@ public class OverlayNodeSendsData implements Event {
 
             traceLength = dis.readInt();
 
-            trace = new ArrayList<>(traceLength);
+            if(trace == null){
+                trace = new ArrayList<>(traceLength);
+            }
 
             for(int i=0; i < traceLength; i++){
                 trace.add(dis.readInt());

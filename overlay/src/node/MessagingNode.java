@@ -10,9 +10,12 @@ import util.MNodeCommandParser;
 import wireformats.*;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Random;
+import java.util.Scanner;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -20,51 +23,94 @@ import java.util.*;
 
 public class MessagingNode implements Node {
 
+    // Messaging node properties
     private int ID;
+    private String myIP;
+    private int myServerPort;
+
     private RoutingTable routingTable;
     private ArrayList<Integer> allOtherMNodes;
-    private TCPConnection registryConnection = null;
     private TCPConnectionsCache tcpCC;
-    private ServerSocket serverSocket;
+
+    private TCPConnection registryConnection = null;
 
     private int sendTracker = 0;
-    private int receiveTracker = 0;
-
     private int relayTracker = 0;
+    private int receiveTracker = 0;
 
     private long sendSummation = 0;
     private long receiveSummation = 0;
 
     public MessagingNode(String registry_ip, int registry_port) throws IOException {
-        routingTable = new RoutingTable();
-        allOtherMNodes = new ArrayList<>();
-        tcpCC = new TCPConnectionsCache();
+        initializeContainers();
 
-        serverSocket = new ServerSocket(0);
-        startServer(0);
+        // Start server thread
+        ServerSocket serverSocket = new ServerSocket(0);
+        Thread serverThread = new Thread(new TCPServerThread(this, serverSocket));
+        serverThread.start();
 
-        Socket regSocket = new Socket(registry_ip, registry_port);
-        registryConnection = new TCPConnection(regSocket, this);
+        // Connect with registry
+        registryConnection = new TCPConnection(new Socket(registry_ip, registry_port), this);
         registryConnection.startReceiveThread();
 
-        OverlayNodeSendsRegistration sendReg = new OverlayNodeSendsRegistration(
-                regSocket.getLocalAddress().getHostAddress(), serverSocket.getLocalPort()
-        );
+        myIP = InetAddress.getLocalHost().getHostAddress();
+        myServerPort = serverSocket.getLocalPort();
+
+        OverlayNodeSendsRegistration sendReg = new OverlayNodeSendsRegistration(myIP, myServerPort);
 
         registryConnection.sendData(sendReg.getBytes());
     }
 
     public MessagingNode(int nodeID){
+        initializeContainers();
         this.ID = nodeID;
+    }
+
+    private void initializeContainers(){
         routingTable = new RoutingTable();
         allOtherMNodes = new ArrayList<>();
         tcpCC = new TCPConnectionsCache();
     }
 
-    public MessagingNode(){
-        routingTable = new RoutingTable();
-        allOtherMNodes = new ArrayList<>();
-        tcpCC = new TCPConnectionsCache();
+
+    public int getSendTracker() {
+        return sendTracker;
+    }
+
+    public int getReceiveTracker() {
+        return receiveTracker;
+    }
+
+    public int getRelayTracker() {
+        return relayTracker;
+    }
+
+    public long getSendSummation() {
+        return sendSummation;
+    }
+
+    public long getReceiveSummation() {
+        return receiveSummation;
+    }
+
+    public void setSendTracker(int sendTracker) {
+        this.sendTracker = sendTracker;
+    }
+
+    public void setReceiveTracker(int receiveTracker) {
+        this.receiveTracker = receiveTracker;
+    }
+
+    public void setRelayTracker(int relayTracker) {
+        this.relayTracker = relayTracker;
+    }
+
+    public void setSendSummation(long sendSummation) {
+        this.sendSummation = sendSummation;
+    }
+
+    public void setReceiveSummation(long receiveSummation) {
+        this.receiveSummation = receiveSummation;
     }
 
     public void setRoutingTable(RoutingTable rt){
@@ -72,6 +118,8 @@ public class MessagingNode implements Node {
     }
 
     public void setAllOtherMNodes(ArrayList<Integer> allOtherMNodes){
+        allOtherMNodes.remove(new Integer(ID));
+        System.out.println("All others: " + allOtherMNodes);
         this.allOtherMNodes = allOtherMNodes;
     }
 
@@ -81,6 +129,15 @@ public class MessagingNode implements Node {
             System.out.println(rEntry);
         }
         System.out.println();
+    }
+
+    public String getTrafficSummary(){
+        return sendTracker + "\t\t" + receiveTracker + "\t\t" + relayTracker + "\t\t" + sendSummation + "\t\t" + receiveSummation;
+    }
+
+    public void print_counters_and_diagnostics(){
+        System.out.println("SendT\trecvT\trelyT\t\tSSum\t\tRSum");
+        System.out.println(getTrafficSummary());
     }
 
     private void setID(int id){
@@ -94,32 +151,46 @@ public class MessagingNode implements Node {
     private void startSendingToNodes(int numPacketsToSend){
         Random rand = new Random();
         int numNodes = allOtherMNodes.size();
-
+        ArrayList<Integer> trace;
+        System.out.println("Sending " + numPacketsToSend);
         for(int i=0; i < numPacketsToSend; i++){
-
             int payload = rand.nextInt();
 
             int randNodeIDIndex = rand.nextInt(numNodes);
 
-            int destinationID = allOtherMNodes.get(randNodeIDIndex);
+            int destinationID;
+
+            destinationID = allOtherMNodes.get(randNodeIDIndex);
 
             sendSummation += payload;
 
-            OverlayNodeSendsData onsd = new OverlayNodeSendsData(destinationID, ID, payload, new ArrayList<Integer>());
+            trace = new ArrayList<>();
+            trace.add(ID);
 
-            sendToBestNode(destinationID, onsd);
+            OverlayNodeSendsData onsd = new OverlayNodeSendsData(destinationID, ID, payload, trace);
+            sendToBestNode(onsd);
+
             sendTracker++;
 
         }
+
+        System.out.println("Sent all packets");
+
+        if(sendTracker != numPacketsToSend){
+            System.out.println("DIDN'T SEND AS MANY PACKETS AS I SHOULD HAVE");
+        }
+
+        OverlayNodeReportsTaskFinished onrtf = new OverlayNodeReportsTaskFinished(myIP, myServerPort, ID);
+
+        registryConnection.sendData(onrtf.getBytes());
     }
 
-    private void sendToBestNode(int destinationID, OverlayNodeSendsData onsd) {
-        int bestNode = routingTable.determineBestNode(destinationID);
+    private void sendToBestNode(OverlayNodeSendsData onsd) {
+        int bestNode = routingTable.determineBestNode(onsd.getDestinationID());
 
         tcpCC.sendEvent(bestNode, onsd);
+
     }
-
-
 
     @Override
     public synchronized void onEvent(Event event) {
@@ -131,6 +202,7 @@ public class MessagingNode implements Node {
             RegistryReportsRegistrationStatus rrRS = (RegistryReportsRegistrationStatus) event;
             setID(rrRS.getAssignedID());
             System.out.println(rrRS.getInfoString());
+            System.out.println("I am " + ID);
 
         }
         else if(eventType == Protocol.REGISTRY_SENDS_NODE_MANIFEST){
@@ -147,7 +219,7 @@ public class MessagingNode implements Node {
 
             NodeReportsOverlaySetupStatus nross = new NodeReportsOverlaySetupStatus(ID, successString);
 
-            System.out.print(tcpCC);
+            printRoutingTable();
 
             registryConnection.sendData(nross.getBytes());
         }
@@ -158,7 +230,9 @@ public class MessagingNode implements Node {
 
         }
         else if(eventType == Protocol.OVERLAY_NODE_SENDS_DATA){
+
             OverlayNodeSendsData onsd = (OverlayNodeSendsData) event;
+            System.out.println("[Received] " + onsd);
 
 
             if(onsd.amInTrace(ID)){
@@ -169,22 +243,31 @@ public class MessagingNode implements Node {
             //If i'm not the destination
             if(!onsd.isDestination(ID)){
                 onsd.addToTrace(ID);
-                sendToBestNode(onsd.getDestinationID(), onsd);
+                //System.out.println("[Relayed]: " + onsd);
+                sendToBestNode(onsd);
                 relayTracker++;
                 return;
             }
 
             int payload = onsd.getPayload();
-
             receiveSummation += payload;
             receiveTracker++;
-        }
-    }
 
-    @Override
-    public void startServer(int portNumber) {
-        Thread serverThread = new Thread(new TCPServerThread(this, serverSocket));
-        serverThread.start();
+            //System.out.println("[Received]: " + onsd);
+        }
+        else if(eventType == Protocol.REGISTRY_REQUESTS_TRAFFIC_SUMMARY){
+            OverlayNodeReportsTrafficSummary onrts = new OverlayNodeReportsTrafficSummary(
+                    ID, sendTracker, relayTracker, sendSummation, receiveTracker, receiveSummation
+            );
+
+            registryConnection.sendData(onrts.getBytes());
+
+            sendTracker = 0;
+            relayTracker = 0;
+            sendSummation = 0;
+            receiveTracker = 0;
+            receiveSummation = 0;
+        }
     }
 
     public static void main(String args[]){
@@ -198,15 +281,17 @@ public class MessagingNode implements Node {
 
         System.out.printf("Connecting to %s on port %s ...\n", registry_host, registry_port);
 
+        MessagingNode mNode = null;
+
         try {
-            MessagingNode mNode = new MessagingNode(registry_host, registry_port);
+            mNode = new MessagingNode(registry_host, registry_port);
         } catch (IOException e) {
             System.out.println("Unable to start messaging node");
             e.printStackTrace();
         }
 
         //Start parsing commands
-        MNodeCommandParser mNodeCP = new MNodeCommandParser();
+        MNodeCommandParser mNodeCP = new MNodeCommandParser(mNode);
         Scanner scan = new Scanner(System.in);
         String input;
 
