@@ -14,6 +14,7 @@ public class OverlayNodeSendsRegistration implements Event {
     private byte type;
 
     public OverlayNodeSendsRegistration(String ipAddr, int portNum) {
+        this.type =  Protocol.OVERLAY_NODE_SENDS_REGISTRATION;
         this.ipAddr = ipAddr;
         this.portNum = portNum;
     }
@@ -58,7 +59,7 @@ public class OverlayNodeSendsRegistration implements Event {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(baos));
 
-            dos.writeByte(Protocol.OVERLAY_NODE_SENDS_REGISTRATION);
+            dos.writeByte(type);
             lengthIP = ipAddr.length();
             dos.writeInt(lengthIP);
 

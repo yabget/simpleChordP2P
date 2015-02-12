@@ -237,6 +237,22 @@ public class Registry implements Node{
                 printTrafficSummaryForAll();
             }
         }
+        else if(event.getType() == Protocol.OVERLAY_NODE_SENDS_DEREGISTRATION){
+            OverlayNodeSendsDeregistration onsdereg = (OverlayNodeSendsDeregistration) event;
+
+            System.out.println("Deregistering " + onsdereg);
+
+            RegistryReportsDeregistrationStatus rrdergs = new RegistryReportsDeregistrationStatus();
+
+            tcpCC.sendEvent(onsdereg.getNodeID(), rrdergs);
+
+            if(tcpCC.removeConn(onsdereg.getNodeID())){
+                System.out.println("Deregistration successful!");
+            }
+            else{
+                System.out.println("Deregistration UNSUCCESFUL!");
+            }
+        }
     }
 
     public static void main(String args[]){

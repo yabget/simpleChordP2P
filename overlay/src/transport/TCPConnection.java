@@ -100,7 +100,8 @@ public class TCPConnection {
                 }
             }
             catch(IOException ioe ){
-                ioe.printStackTrace();
+                //ioe.printStackTrace();
+                System.out.println("Connection with node " + socket.getInetAddress().getHostAddress() + " is lost! ");
             }
         }
     }

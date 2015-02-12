@@ -217,6 +217,11 @@ public class MessagingNode implements Node {
         registryConnection.sendData(onrtf.getBytes());
     }
 
+    public void sendDeregistration(){
+        OverlayNodeSendsDeregistration sendDereg = new OverlayNodeSendsDeregistration(myIP, myServerPort, ID);
+        registryConnection.sendData(sendDereg.getBytes());
+    }
+
     @Override
     public synchronized void onEvent(Event event) {
         if(event == null){
@@ -294,6 +299,10 @@ public class MessagingNode implements Node {
             sendSummation = 0;
             receiveTracker = 0;
             receiveSummation = 0;
+        }
+        else if(eventType == Protocol.REGISTRY_REPORTS_DEREGISTRATION_STATUS){
+            System.out.println("Awesome! I am deregistered! Goodbye!");
+            System.exit(0);
         }
     }
 

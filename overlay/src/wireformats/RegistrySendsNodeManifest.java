@@ -9,7 +9,7 @@ import java.util.ArrayList;
 /**
  * Created by ydubale on 1/22/15.
  */
-public class RegistrySendsNodeManifest implements Event, Runnable {
+public class RegistrySendsNodeManifest implements Event {
 
     private RoutingTable routingTable;
     private byte routingTableSize;
@@ -115,8 +115,4 @@ public class RegistrySendsNodeManifest implements Event, Runnable {
         return type;
     }
 
-    @Override
-    public void run() {
-
-    }
 }
