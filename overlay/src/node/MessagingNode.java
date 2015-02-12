@@ -14,8 +14,10 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Queue;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -41,6 +43,10 @@ public class MessagingNode implements Node {
     private long sendSummation = 0;
     private long receiveSummation = 0;
 
+
+    private Thread sendQueueThread = null;
+    Queue<OverlayNodeSendsData> sendQ;
+
     public MessagingNode(String registry_ip, int registry_port) throws IOException {
         initializeContainers();
 
@@ -59,6 +65,24 @@ public class MessagingNode implements Node {
         OverlayNodeSendsRegistration sendReg = new OverlayNodeSendsRegistration(myIP, myServerPort);
 
         registryConnection.sendData(sendReg.getBytes());
+
+        sendQ = new ConcurrentLinkedQueue<>();
+
+        sendQueueThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while(true){
+                    if(sendQ.size() > 0){
+                        OverlayNodeSendsData onsd = sendQ.remove();
+                        int bestNode = routingTable.determineBestNode(onsd.getDestinationID());
+
+                        tcpCC.sendEvent(bestNode, onsd);
+                    }
+                }
+
+            }
+        });
+        sendQueueThread.start();
     }
 
     public MessagingNode(int nodeID){
@@ -71,7 +95,6 @@ public class MessagingNode implements Node {
         allOtherMNodes = new ArrayList<>();
         tcpCC = new TCPConnectionsCache();
     }
-
 
     public int getSendTracker() {
         return sendTracker;
@@ -153,6 +176,9 @@ public class MessagingNode implements Node {
         int numNodes = allOtherMNodes.size();
         ArrayList<Integer> trace;
         System.out.println("Sending " + numPacketsToSend);
+
+
+
         for(int i=0; i < numPacketsToSend; i++){
             int payload = rand.nextInt();
 
@@ -167,8 +193,14 @@ public class MessagingNode implements Node {
             trace = new ArrayList<>();
             trace.add(ID);
 
+
             OverlayNodeSendsData onsd = new OverlayNodeSendsData(destinationID, ID, payload, trace);
-            sendToBestNode(onsd);
+
+            synchronized (sendQ){
+                sendQ.add(onsd);
+            }
+
+            //System.out.println("[SEND " +  i + "]: " + onsd);
 
             sendTracker++;
 
@@ -183,13 +215,6 @@ public class MessagingNode implements Node {
         OverlayNodeReportsTaskFinished onrtf = new OverlayNodeReportsTaskFinished(myIP, myServerPort, ID);
 
         registryConnection.sendData(onrtf.getBytes());
-    }
-
-    private void sendToBestNode(OverlayNodeSendsData onsd) {
-        int bestNode = routingTable.determineBestNode(onsd.getDestinationID());
-
-        tcpCC.sendEvent(bestNode, onsd);
-
     }
 
     @Override
@@ -232,8 +257,6 @@ public class MessagingNode implements Node {
         else if(eventType == Protocol.OVERLAY_NODE_SENDS_DATA){
 
             OverlayNodeSendsData onsd = (OverlayNodeSendsData) event;
-            System.out.println("[Received] " + onsd);
-
 
             if(onsd.amInTrace(ID)){
                 System.out.println("SOMETHING WENT WRONG, I GOT PACKET AGAIN (i.e. I'm already in trace.");
@@ -242,9 +265,13 @@ public class MessagingNode implements Node {
 
             //If i'm not the destination
             if(!onsd.isDestination(ID)){
+
+
                 onsd.addToTrace(ID);
-                //System.out.println("[Relayed]: " + onsd);
-                sendToBestNode(onsd);
+                int bestNode = routingTable.determineBestNode(onsd.getDestinationID());
+
+                tcpCC.sendEvent(bestNode, onsd);
+                //System.out.println("[RELAYED-]: " + onsd);
                 relayTracker++;
                 return;
             }
@@ -253,7 +280,7 @@ public class MessagingNode implements Node {
             receiveSummation += payload;
             receiveTracker++;
 
-            //System.out.println("[Received]: " + onsd);
+            //System.out.println("[RECEIVED]: " + onsd);
         }
         else if(eventType == Protocol.REGISTRY_REQUESTS_TRAFFIC_SUMMARY){
             OverlayNodeReportsTrafficSummary onrts = new OverlayNodeReportsTrafficSummary(
@@ -276,30 +303,30 @@ public class MessagingNode implements Node {
 
         clp.validateMNodeCLA(args);
 
-        String registry_host = clp.ip_addr;
-        int registry_port = clp.port_num;
-
-        System.out.printf("Connecting to %s on port %s ...\n", registry_host, registry_port);
-
-        MessagingNode mNode = null;
+        System.out.printf("Connecting to %s on port %s ...\n", clp.ip_addr, clp.port_num);
 
         try {
-            mNode = new MessagingNode(registry_host, registry_port);
+            MessagingNode mNode = new MessagingNode(clp.ip_addr, clp.port_num);
+
+            //Start parsing commands
+            MNodeCommandParser mNodeCP = new MNodeCommandParser(mNode);
+            Scanner scan = new Scanner(System.in);
+
+            String input;
+
+            System.out.print("Command: ");
+            while((input = scan.nextLine()) != null){
+                mNodeCP.parseArgument(input);
+                System.out.print("Command: ");
+            }
+
         } catch (IOException e) {
             System.out.println("Unable to start messaging node");
             e.printStackTrace();
+            System.exit(-1);
         }
 
-        //Start parsing commands
-        MNodeCommandParser mNodeCP = new MNodeCommandParser(mNode);
-        Scanner scan = new Scanner(System.in);
-        String input;
 
-        System.out.print("Command: ");
-        while((input = scan.nextLine()) != null){
-            mNodeCP.parseArgument(input);
-            System.out.print("Command: ");
-        }
 
     }
 

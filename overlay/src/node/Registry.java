@@ -209,8 +209,8 @@ public class Registry implements Node{
             if(numCompletedNodes == numNodesInOverlay){
                 RegistryRequestsTrafficSummary rrts = new RegistryRequestsTrafficSummary();
                 try {
-                    System.out.println("Count to 20 seconds!");
-                    Thread.sleep(20000);
+                    System.out.println("Count to 60 seconds!");
+                    Thread.sleep(60000);
                     System.out.println("Now sending task finished to all nodes!");
 
                 } catch (InterruptedException e) {

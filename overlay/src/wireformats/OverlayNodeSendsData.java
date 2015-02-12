@@ -54,6 +54,8 @@ public class OverlayNodeSendsData implements Event {
         ByteArrayInputStream bais = new ByteArrayInputStream(data);
         DataInputStream dis = new DataInputStream(new BufferedInputStream(bais));
 
+        trace = new ArrayList<>();
+
         try {
             type = dis.readByte();
 
@@ -65,11 +67,7 @@ public class OverlayNodeSendsData implements Event {
 
             traceLength = dis.readInt();
 
-            if(trace == null){
-                trace = new ArrayList<>(traceLength);
-            }
-
-            for(int i=0; i < traceLength; i++){
+            for (int i=0; i < traceLength; i++){
                 trace.add(dis.readInt());
             }
 

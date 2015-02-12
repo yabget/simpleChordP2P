@@ -52,24 +52,15 @@ public class TCPConnection {
             this.socket = socket;
         }
 
-        public void sendData(byte[] dataToSend){
+        public synchronized void sendData(byte[] dataToSend){
             try{
-                //System.out.println("About to send");
                 DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
 
-                //System.out.println("Got the DOS");
                 int dataLen = dataToSend.length;
 
-                synchronized (dos){
-                    dos.writeInt(dataLen);
-                    dos.write(dataToSend, 0, dataLen);
-                }
-                //System.out.println("Wrote the length");
-
-                //System.out.println("Wrote the data");
+                dos.writeInt(dataLen);
+                dos.write(dataToSend, 0, dataLen);
                 dos.flush();
-                //System.out.println("SENT!");
-
             }
             catch (IOException ioe){
                 ioe.printStackTrace();

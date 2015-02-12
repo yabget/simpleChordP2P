@@ -9,24 +9,12 @@ import java.util.List;
 public class RoutingTable {
 
     private ArrayList<RoutingEntry> entries;
-    private boolean wrapsAround;
-    private int idWrapOccursAt;
 
     public RoutingTable(){
         entries = new ArrayList<>();
-        wrapsAround = false;
     }
 
     public void addEntry(RoutingEntry entry){
-        if(entries.size() > 0){
-            int lastIndex = entries.size()-1;
-            int lastNodeID = entries.get(lastIndex).getNodeID();
-
-            if(entry.getNodeID() < lastNodeID){
-                wrapsAround = true;
-                idWrapOccursAt = entry.getNodeID();
-            }
-        }
         entries.add(entry);
     }
 
@@ -38,40 +26,40 @@ public class RoutingTable {
         return (byte) entries.size();
     }
 
-    public boolean hasNode(int nodeID){
-        for(RoutingEntry rEntry : entries){
-            if(rEntry.getNodeID() == nodeID){
-                return true;
-            }
-        }
-        return false;
-    }
-
     private boolean isInBetween(int destination, int leftValue, int rightValue){
         return (destination > leftValue) && (destination < rightValue);
     }
 
     public int determineBestNode(int destinationID) {
-        int bestID = entries.get(0).getNodeID();
+        int maxNode = entries.get(0).getNodeID();
+        int entriesSize = entries.size();
 
-        if(bestID == destinationID){
-            return bestID;
-        }
+        int allFail = 0;
 
-        for(int i= 0; i < entries.size()-1; i++){
-            int firstNode = entries.get(i).getNodeID();
-            int secondNode = entries.get(i+1).getNodeID();
+        for(int i = 0; i < entriesSize; i++){
+            int currNode = entries.get(i).getNodeID();
 
-            if(secondNode == destinationID){
-                return secondNode;
+            if(currNode == destinationID){
+                //System.out.println("[**INRT**]: " + currNode);
+                return currNode;
             }
 
-            if(isInBetween(destinationID, firstNode, secondNode)){
-                bestID = firstNode;
+            if(currNode < destinationID && currNode > maxNode){
+                maxNode = currNode;
+            }
+            else{
+                allFail++;
+                //System.out.println("All Fail: " + allFail + "\tEntrySize: " + entriesSize);
             }
         }
 
-        return bestID;
+        if(allFail == entriesSize){
+            //System.out.println("[**LAST**]: " + entries.get(entriesSize-1).getNodeID());
+            return entries.get(entriesSize-1).getNodeID(); // Return last node
+        }
+
+        //System.out.println("[**BEST**]: " + maxNode);
+        return maxNode;
     }
 
 }
