@@ -13,11 +13,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Queue;
-import java.util.Random;
-import java.util.Scanner;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.*;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -45,7 +41,7 @@ public class MessagingNode implements Node {
 
 
     private Thread sendQueueThread = null;
-    Queue<OverlayNodeSendsData> sendQ;
+    private Queue<OverlayNodeSendsData> sendQ;
 
     public MessagingNode(String registry_ip, int registry_port) throws IOException {
         initializeContainers();
@@ -66,20 +62,21 @@ public class MessagingNode implements Node {
 
         registryConnection.sendData(sendReg.getBytes());
 
-        sendQ = new ConcurrentLinkedQueue<>();
+        sendQ = new LinkedList<>();
 
         sendQueueThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                while(true){
-                    if(sendQ.size() > 0){
-                        OverlayNodeSendsData onsd = sendQ.remove();
-                        int bestNode = routingTable.determineBestNode(onsd.getDestinationID());
-
-                        tcpCC.sendEvent(bestNode, onsd);
-                    }
+            while(true){
+                OverlayNodeSendsData onsd;
+                synchronized (sendQ){
+                    onsd = sendQ.poll();
                 }
-
+                if(onsd != null){
+                    int bestNodeToSend = routingTable.determineBestNode(onsd.getDestinationID());
+                    tcpCC.sendEvent(bestNodeToSend, onsd);
+                }
+            }
             }
         });
         sendQueueThread.start();
@@ -268,9 +265,9 @@ public class MessagingNode implements Node {
 
 
                 onsd.addToTrace(ID);
-                int bestNode = routingTable.determineBestNode(onsd.getDestinationID());
-
-                tcpCC.sendEvent(bestNode, onsd);
+                synchronized (sendQ){
+                    sendQ.add(onsd);
+                }
                 //System.out.println("[RELAYED-]: " + onsd);
                 relayTracker++;
                 return;
