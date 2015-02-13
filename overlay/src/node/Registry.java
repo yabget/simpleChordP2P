@@ -202,17 +202,8 @@ public class Registry implements Node{
 
         if(numCompletedNodes == numNodesInOverlay){
             RegistryRequestsTrafficSummary rrts = new RegistryRequestsTrafficSummary();
-            try {
-                System.out.println("Counting to 20 seconds!");
-                for(int i=0; i< 20; i++){
-                    System.out.println("Second " + (i+1));
-                    Thread.sleep(1000);
-                }
-                System.out.println("Now asking for traffic summary from all nodes.");
-
-            } catch (InterruptedException e) {
-                System.out.println("Oh No! Somehow I have a problem sleeping for 20 seconds.");
-            }
+            sleepSeconds(20);
+            System.out.println("Now asking for traffic summary from all nodes.");
             sendToAllNodes(rrts);
         }
     }
@@ -225,11 +216,7 @@ public class Registry implements Node{
     private synchronized void handleOverlayNodeReportsTrafficSummary(OverlayNodeReportsTrafficSummary onrts){
         MessagingNode currMNode = messNode.get(onrts.getNodeID());
 
-        currMNode.setSendTracker(onrts.getTotalSent());
-        currMNode.setRelayTracker(onrts.getTotalRelayed());
-        currMNode.setSendSummation(onrts.getSumSent());
-        currMNode.setReceiveTracker(onrts.getTotalReceived());
-        currMNode.setReceiveSummation(onrts.getSumReceived());
+        currMNode.setOverlayNodeRepTraffSum(onrts);
 
         numTrafficReceived++;
 
@@ -263,6 +250,18 @@ public class Registry implements Node{
         }
         else{
             System.out.println("Deregistration UNSUCCESFUL!");
+        }
+    }
+
+    private void sleepSeconds(int seconds){
+        try {
+            System.out.println("Counting to " + seconds + " seconds!");
+            for(int i=0; i< seconds; i++){
+                System.out.println("Second " + (i+1));
+                Thread.sleep(1000);
+            }
+        } catch (InterruptedException e) {
+            System.out.println("Oh No! Somehow I have a problem sleeping for 20 seconds.");
         }
     }
 

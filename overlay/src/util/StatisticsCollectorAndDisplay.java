@@ -25,11 +25,11 @@ public class StatisticsCollectorAndDisplay {
         for(Integer nodeID : messNode.keySet()){
             MessagingNode mNode = messNode.get(nodeID);
 
-            sumPacketSent += mNode.getSendTracker();
-            sumPacketRecv += mNode.getReceiveTracker();
-            sumPacketRelay += mNode.getRelayTracker();
-            sumValuesSent += mNode.getSendSummation();
-            sumValuesRecv += mNode.getReceiveSummation();
+            sumPacketSent += mNode.getOnodeRepTraffSum().getTotalSent();
+            sumPacketRecv += mNode.getOnodeRepTraffSum().getTotalReceived();
+            sumPacketRelay += mNode.getOnodeRepTraffSum().getTotalRelayed();
+            sumValuesSent += mNode.getOnodeRepTraffSum().getSumSent();
+            sumValuesRecv += mNode.getOnodeRepTraffSum().getSumReceived();
 
             System.out.println(nodeID + "\t" + mNode.getTrafficSummary());
         }
