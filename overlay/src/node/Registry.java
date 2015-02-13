@@ -194,7 +194,7 @@ public class Registry implements Node{
      * to account for packets that might still be in transit
      * @param onrtf - OverlayNodeReportsTaskFinished event
      */
-    private void handleOverlayNodeReportsTaskFinished(OverlayNodeReportsTaskFinished onrtf){
+    private synchronized void handleOverlayNodeReportsTaskFinished(OverlayNodeReportsTaskFinished onrtf){
         numCompletedNodes++;
         System.out.println(numCompletedNodes + " Finished");
 
@@ -222,7 +222,7 @@ public class Registry implements Node{
      * Once all the messaging nodes have reported, messaging node prints the traffic summary
      * @param onrts - OverlayNodeReportsTrafficSummary event
      */
-    private void handleOverlayNodeReportsTrafficSummary(OverlayNodeReportsTrafficSummary onrts){
+    private synchronized void handleOverlayNodeReportsTrafficSummary(OverlayNodeReportsTrafficSummary onrts){
         MessagingNode currMNode = messNode.get(onrts.getNodeID());
 
         currMNode.setSendTracker(onrts.getTotalSent());
