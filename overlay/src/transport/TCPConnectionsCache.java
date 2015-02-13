@@ -19,6 +19,16 @@ public class TCPConnectionsCache {
         tcpConns.put(nodeID, tcpC);
     }
 
+    public boolean removeConn(int nodeID){
+        synchronized (tcpConns){
+            if(tcpConns.containsKey(nodeID)){
+                tcpConns.remove(nodeID);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public int getIDofConnection(String ipAddress, int port){
         for(Integer id : tcpConns.keySet()){
             TCPConnection currConn = tcpConns.get(id);

@@ -13,7 +13,11 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Queue;
+import java.util.Random;
+import java.util.Scanner;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -41,7 +45,7 @@ public class MessagingNode implements Node {
 
 
     private Thread sendQueueThread = null;
-    private Queue<OverlayNodeSendsData> sendQ;
+    Queue<OverlayNodeSendsData> sendQ;
 
     public MessagingNode(String registry_ip, int registry_port) throws IOException {
         initializeContainers();
@@ -62,21 +66,22 @@ public class MessagingNode implements Node {
 
         registryConnection.sendData(sendReg.getBytes());
 
-        sendQ = new LinkedList<>();
+        sendQ = new ConcurrentLinkedQueue<>();
 
         sendQueueThread = new Thread(new Runnable() {
             @Override
             public void run() {
-            while(true){
-                OverlayNodeSendsData onsd;
-                synchronized (sendQ){
-                    onsd = sendQ.poll();
+                while(true){
+                    OverlayNodeSendsData relayMsg;
+                    synchronized (sendQ){
+                        relayMsg = sendQ.poll();
+                    }
+                    if(relayMsg != null){
+                        int bestNodeToSend = routingTable.determineBestNode(relayMsg.getDestinationID());
+                        tcpCC.sendEvent(bestNodeToSend, relayMsg);
+                    }
                 }
-                if(onsd != null){
-                    int bestNodeToSend = routingTable.determineBestNode(onsd.getDestinationID());
-                    tcpCC.sendEvent(bestNodeToSend, onsd);
-                }
-            }
+
             }
         });
         sendQueueThread.start();
@@ -214,6 +219,11 @@ public class MessagingNode implements Node {
         registryConnection.sendData(onrtf.getBytes());
     }
 
+    public void sendDeregistration(){
+        OverlayNodeSendsDeregistration sendDereg = new OverlayNodeSendsDeregistration(myIP, myServerPort, ID);
+        registryConnection.sendData(sendDereg.getBytes());
+    }
+
     @Override
     public synchronized void onEvent(Event event) {
         if(event == null){
@@ -262,12 +272,11 @@ public class MessagingNode implements Node {
 
             //If i'm not the destination
             if(!onsd.isDestination(ID)){
-
-
                 onsd.addToTrace(ID);
                 synchronized (sendQ){
                     sendQ.add(onsd);
                 }
+
                 //System.out.println("[RELAYED-]: " + onsd);
                 relayTracker++;
                 return;
@@ -291,6 +300,10 @@ public class MessagingNode implements Node {
             sendSummation = 0;
             receiveTracker = 0;
             receiveSummation = 0;
+        }
+        else if(eventType == Protocol.REGISTRY_REPORTS_DEREGISTRATION_STATUS){
+            System.out.println("Awesome! I am deregistered! Goodbye!");
+            System.exit(0);
         }
     }
 

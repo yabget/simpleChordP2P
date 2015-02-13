@@ -209,11 +209,8 @@ public class Registry implements Node{
             if(numCompletedNodes == numNodesInOverlay){
                 RegistryRequestsTrafficSummary rrts = new RegistryRequestsTrafficSummary();
                 try {
-                    System.out.println("Counting to 20 seconds!");
-                    for(int i=0; i<20; i++){
-                        System.out.println("Second " + (i+1));
-                        Thread.sleep(1000);
-                    }
+                    System.out.println("Count to 20 seconds!");
+                    Thread.sleep(20000);
                     System.out.println("Now sending task finished to all nodes!");
 
                 } catch (InterruptedException e) {
@@ -238,6 +235,22 @@ public class Registry implements Node{
             int numNodesInOverlay = messNode.size();
             if(numTrafficReceived == numNodesInOverlay){
                 printTrafficSummaryForAll();
+            }
+        }
+        else if(event.getType() == Protocol.OVERLAY_NODE_SENDS_DEREGISTRATION){
+            OverlayNodeSendsDeregistration onsdereg = (OverlayNodeSendsDeregistration) event;
+
+            System.out.println("Deregistering " + onsdereg);
+
+            RegistryReportsDeregistrationStatus rrdergs = new RegistryReportsDeregistrationStatus();
+
+            tcpCC.sendEvent(onsdereg.getNodeID(), rrdergs);
+
+            if(tcpCC.removeConn(onsdereg.getNodeID())){
+                System.out.println("Deregistration successful!");
+            }
+            else{
+                System.out.println("Deregistration UNSUCCESFUL!");
             }
         }
     }

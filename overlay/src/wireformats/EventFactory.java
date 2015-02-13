@@ -46,6 +46,12 @@ public class EventFactory {
             case Protocol.OVERLAY_NODE_REPORTS_TRAFFIC_SUMMARY:
                 mainE = new OverlayNodeReportsTrafficSummary(data);
                 break;
+            case Protocol.OVERLAY_NODE_SENDS_DEREGISTRATION:
+                mainE = new OverlayNodeSendsDeregistration(data);
+                break;
+            case Protocol.REGISTRY_REPORTS_DEREGISTRATION_STATUS:
+                mainE = new RegistryReportsDeregistrationStatus(data);
+                break;
             default:
                 System.out.println("ERROR IN FACTORY!");
         }
