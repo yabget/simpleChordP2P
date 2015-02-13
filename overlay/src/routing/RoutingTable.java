@@ -1,5 +1,7 @@
 package routing;
 
+import transport.TCPConnectionsCache;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,8 +28,32 @@ public class RoutingTable {
         return (byte) entries.size();
     }
 
-    private boolean isInBetween(int destination, int leftValue, int rightValue){
-        return (destination > leftValue) && (destination < rightValue);
+    /**
+     * Returns the routing table for a given index in the sorted array
+     * Limits: Routing table size should be between 1-4
+     * @param index - The index of the sorted array
+     * @param sortedIDs - Sorted collection of node IDs
+     * @return A RoutinTable object for the node at 'index'
+     */
+    public static RoutingTable getRoutingTableForIndex(
+            int index, int routingTableSize, ArrayList<Integer> sortedIDs, TCPConnectionsCache tcpCC){
+
+        RoutingTable rTable = new RoutingTable();
+
+        int power = 1;
+
+        for(int i = 0; i < routingTableSize; i++){
+            // entryindex is the next entry in the routing table
+            int entryIndex = (index + power) % sortedIDs.size(); // Accounts for circular overflow
+
+            int nodeID = sortedIDs.get(entryIndex);
+
+            rTable.addEntry(new RoutingEntry(nodeID, tcpCC.getTCPConnection(nodeID)));
+
+            power = (power << 1); // Increase by powers of 2
+        }
+
+        return rTable;
     }
 
     public int determineBestNode(int destinationID) {

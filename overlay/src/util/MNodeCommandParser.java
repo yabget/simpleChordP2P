@@ -21,9 +21,7 @@ public class MNodeCommandParser {
         this.mNode = mNode;
     }
 
-    private void printOptions() throws UnknownHostException {
-        InetAddress inetA = InetAddress.getLocalHost();
-        System.out.println("You are on " + inetA.getHostName() + " ip " + inetA.getHostAddress());
+    private void printOptions() {
         System.out.println("\t" + PRINT_COUNTERS_AND_DIAGNOSTICS);
         System.out.println("\t" + EXIT_OVERALY);
         System.out.println("\t" + HELP);
@@ -38,9 +36,13 @@ public class MNodeCommandParser {
         }
         else {
             try {
+                InetAddress inetA = InetAddress.getLocalHost();
+
+                System.out.println("You are on " + inetA.getHostName() + " ip " + inetA.getHostAddress());
                 printOptions();
             } catch (UnknownHostException e) {
-                e.printStackTrace();
+                System.out.println("Possible list of commands: ");
+                printOptions();
             }
         }
         return null;

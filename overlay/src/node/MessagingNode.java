@@ -13,11 +13,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Queue;
-import java.util.Random;
-import java.util.Scanner;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.*;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -27,8 +23,8 @@ public class MessagingNode implements Node {
 
     // Messaging node properties
     private int ID;
-    private String myIP;
-    private int myServerPort;
+    private String ipAddress;
+    private int port;
 
     private RoutingTable routingTable;
     private ArrayList<Integer> allOtherMNodes;
@@ -45,7 +41,7 @@ public class MessagingNode implements Node {
 
 
     private Thread sendQueueThread = null;
-    Queue<OverlayNodeSendsData> sendQ;
+    private Queue<OverlayNodeSendsData> sendQueue;
 
     public MessagingNode(String registry_ip, int registry_port) throws IOException {
         initializeContainers();
@@ -59,22 +55,26 @@ public class MessagingNode implements Node {
         registryConnection = new TCPConnection(new Socket(registry_ip, registry_port), this);
         registryConnection.startReceiveThread();
 
-        myIP = InetAddress.getLocalHost().getHostAddress();
-        myServerPort = serverSocket.getLocalPort();
+        // Store IP and port information
+        ipAddress = InetAddress.getLocalHost().getHostAddress();
+        port = serverSocket.getLocalPort();
 
-        OverlayNodeSendsRegistration sendReg = new OverlayNodeSendsRegistration(myIP, myServerPort);
-
+        // Send registration to Registry
+        OverlayNodeSendsRegistration sendReg = new OverlayNodeSendsRegistration(ipAddress, port);
         registryConnection.sendData(sendReg.getBytes());
 
-        sendQ = new ConcurrentLinkedQueue<>();
+
+        // Initialize sending queue between messaging nodes
+        sendQueue = new LinkedList<>();
+
 
         sendQueueThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 while(true){
                     OverlayNodeSendsData relayMsg;
-                    synchronized (sendQ){
-                        relayMsg = sendQ.poll();
+                    synchronized (sendQueue){
+                        relayMsg = sendQueue.poll();
                     }
                     if(relayMsg != null){
                         int bestNodeToSend = routingTable.determineBestNode(relayMsg.getDestinationID());
@@ -85,11 +85,14 @@ public class MessagingNode implements Node {
             }
         });
         sendQueueThread.start();
+
     }
 
-    public MessagingNode(int nodeID){
+    public MessagingNode(int nodeID, String ipAddress, int port){
         initializeContainers();
         this.ID = nodeID;
+        this.ipAddress = ipAddress;
+        this.port = port;
     }
 
     private void initializeContainers(){
@@ -169,10 +172,6 @@ public class MessagingNode implements Node {
         this.ID = id;
     }
 
-    public String toString(){
-        return ID + " ";
-    }
-
     private void startSendingToNodes(int numPacketsToSend){
         Random rand = new Random();
         int numNodes = allOtherMNodes.size();
@@ -198,11 +197,9 @@ public class MessagingNode implements Node {
 
             OverlayNodeSendsData onsd = new OverlayNodeSendsData(destinationID, ID, payload, trace);
 
-            synchronized (sendQ){
-                sendQ.add(onsd);
+            synchronized (sendQueue){
+                sendQueue.add(onsd);
             }
-
-            //System.out.println("[SEND " +  i + "]: " + onsd);
 
             sendTracker++;
 
@@ -214,14 +211,18 @@ public class MessagingNode implements Node {
             System.out.println("DIDN'T SEND AS MANY PACKETS AS I SHOULD HAVE");
         }
 
-        OverlayNodeReportsTaskFinished onrtf = new OverlayNodeReportsTaskFinished(myIP, myServerPort, ID);
+        OverlayNodeReportsTaskFinished onrtf = new OverlayNodeReportsTaskFinished(ipAddress, port, ID);
 
         registryConnection.sendData(onrtf.getBytes());
     }
 
     public void sendDeregistration(){
-        OverlayNodeSendsDeregistration sendDereg = new OverlayNodeSendsDeregistration(myIP, myServerPort, ID);
+        OverlayNodeSendsDeregistration sendDereg = new OverlayNodeSendsDeregistration(ipAddress, port, ID);
         registryConnection.sendData(sendDereg.getBytes());
+    }
+
+    public String toString(){
+        return ID + "\t" + ipAddress + "\t" + port;
     }
 
     @Override
@@ -273,8 +274,8 @@ public class MessagingNode implements Node {
             //If i'm not the destination
             if(!onsd.isDestination(ID)){
                 onsd.addToTrace(ID);
-                synchronized (sendQ){
-                    sendQ.add(onsd);
+                synchronized (sendQueue){
+                    sendQueue.add(onsd);
                 }
 
                 //System.out.println("[RELAYED-]: " + onsd);

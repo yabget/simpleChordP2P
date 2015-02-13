@@ -20,13 +20,6 @@ public class RoutingEntry {
     String ipAddr;
     int port;
 
-    public RoutingEntry(int nodeID, String ipAddress, int port){
-        this.nodeID = nodeID;
-        this.ipAddr = ipAddress;
-        this.port = port;
-        this.lengthIP = (byte) ipAddr.length();
-    }
-
     public RoutingEntry(int nodeID, TCPConnection tcpC){
         this.nodeID = nodeID;
         this.ipAddr = tcpC.getIP();
@@ -43,7 +36,12 @@ public class RoutingEntry {
 
     public void addSelfToTCPConnectionCache(TCPConnectionsCache tcpConnectionsCache){
         try {
-            tcpConnectionsCache.addNewConn(nodeID, new TCPConnection(new Socket(ipAddr, port), new MessagingNode(nodeID)));
+            tcpConnectionsCache.addNewConn(
+                    nodeID,
+                    new TCPConnection(
+                            new Socket(ipAddr, port), new MessagingNode(nodeID, ipAddr, port)
+                    )
+            );
         } catch (IOException e) {
             e.printStackTrace();
         }

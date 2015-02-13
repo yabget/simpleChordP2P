@@ -19,8 +19,12 @@ public class NodeReportsOverlaySetupStatus implements Event {
         this.type = Protocol.NODE_REPORTS_OVERLAY_SETUP_STATUS;
     }
 
+    public int getSuccessStatus() {
+        return successStatus;
+    }
+
     public boolean isSuccessful(){
-        return successStatus == -1;
+        return successStatus != -1;
     }
 
     public String getInfoString(){
