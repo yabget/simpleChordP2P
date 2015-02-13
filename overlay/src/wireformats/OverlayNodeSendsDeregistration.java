@@ -1,86 +1,37 @@
 package wireformats;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 /**
  * Created by ydubale on 1/22/15.
  */
 public class OverlayNodeSendsDeregistration implements Event{
 
+    private int lengthIP;
+    private String ipAddr;
+    private int portNum;
+    private int assignedID;
     private byte type;
-    private byte lengthIP;
-    private String ipAddress;
-    int portNumber;
+    private byte[] dataBytes;
 
-    public int getNodeID() {
-        return nodeID;
-    }
-
-    int nodeID;
-
-    public OverlayNodeSendsDeregistration(String ipAddress, int portNumber, int nodeID){
-        this.type = Protocol.OVERLAY_NODE_SENDS_DEREGISTRATION;
-        this.lengthIP = (byte) ipAddress.length();
-        this.ipAddress = ipAddress;
-        this.portNumber = portNumber;
-        this.nodeID = nodeID;
-    }
-
-    public OverlayNodeSendsDeregistration(byte[] data){
-        ByteArrayInputStream bais = new ByteArrayInputStream(data);
-        DataInputStream dis = new DataInputStream(new BufferedInputStream(bais));
-
-        try {
-            type = dis.readByte();
-
-            lengthIP = dis.readByte();
-
-            byte[] ipAddr = new byte[lengthIP];
-            dis.readFully(ipAddr);
-
-            ipAddress = new String(ipAddr);
-
-            portNumber = dis.readInt();
-
-            nodeID = dis.readInt();
-
-            bais.close();
-            dis.close();
-
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public byte[] getBytes() {
         byte[] toSend = null;
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(baos));
-
         try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(baos));
+
             dos.writeByte(type);
 
-            dos.writeByte(lengthIP);
-
-            dos.write(ipAddress.getBytes());
-
-            dos.writeInt(portNumber);
-
-            dos.writeInt(nodeID);
-
-            dos.flush();
-            toSend = baos.toByteArray();
-
-            baos.close();
-            dos.close();
         }
         catch(IOException e){
             e.printStackTrace();
         }
-
         return toSend;
     }
 
@@ -89,8 +40,10 @@ public class OverlayNodeSendsDeregistration implements Event{
         return type;
     }
 
-    public String toString(){
-        return "Node: " + nodeID + " IP: " + ipAddress + " Port: " + portNumber;
+    public OverlayNodeSendsDeregistration(){
+
     }
+
+
 
 }

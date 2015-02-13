@@ -2,6 +2,7 @@ package util;
 
 import node.MessagingNode;
 import wireformats.Event;
+import wireformats.OverlayNodeSendsDeregistration;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -34,7 +35,7 @@ public class MNodeCommandParser {
             mNode.print_counters_and_diagnostics();
         }
         else if(command.equals(EXIT_OVERALY)){
-            mNode.sendDeregistration();
+            return (Event)new OverlayNodeSendsDeregistration();
         }
         else {
             try {
