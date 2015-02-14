@@ -159,8 +159,8 @@ public class Registry implements Node{
         }
 
         try {
-            tcpCC.addNewConn(assignedID, new TCPConnection(new Socket(onsr.getIpAddr(), onsr.getPort()), this));
-            messNode.put(assignedID, new MessagingNode(assignedID, onsr.getIpAddr(), onsr.getPort()));
+            tcpCC.addNewConn(assignedID, new TCPConnection(new Socket(onsr.getIpAddress(), onsr.getPort()), this));
+            messNode.put(assignedID, new MessagingNode(assignedID, onsr.getIpAddress(), onsr.getPort()));
         } catch (IOException e) {
             System.out.println("Problem in onEvent of Registry, cannot make connection with node. Not adding node.");
             return;

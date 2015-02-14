@@ -1,7 +1,5 @@
 package wireformats;
 
-import java.io.*;
-
 /**
  * Created by ydubale on 1/22/15.
  */
@@ -29,30 +27,46 @@ public class OverlayNodeReportsTrafficSummary implements Event {
     }
 
     public OverlayNodeReportsTrafficSummary(byte[] data){
-        ByteArrayInputStream bais = new ByteArrayInputStream(data);
-        DataInputStream dis = new DataInputStream(new BufferedInputStream(bais));
+        ByteReader byteReader = new ByteReader(data);
 
-        try {
-            type = dis.readByte();
+        type = byteReader.readByte();
 
-            nodeID = dis.readInt();
+        nodeID = byteReader.readInt();
 
-            totalSent = dis.readInt();
+        totalSent = byteReader.readInt();
 
-            totalRelayed = dis.readInt();
+        totalRelayed = byteReader.readInt();
 
-            sumSent = dis.readLong();
+        sumSent = byteReader.readLong();
 
-            totalReceived = dis.readInt();
+        totalReceived = byteReader.readInt();
 
-            sumReceived = dis.readLong();
+        sumReceived = byteReader.readLong();
 
-            bais.close();
-            dis.close();
+        byteReader.close();
+    }
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    @Override
+    public byte[] getBytes() {
+        ByteWriter byteWriter = new ByteWriter();
+
+        byteWriter.writeByte(type);
+
+        byteWriter.writeInt(nodeID);
+
+        byteWriter.writeInt(totalSent);
+
+        byteWriter.writeInt(totalRelayed);
+
+        byteWriter.writeLong(sumSent);
+
+        byteWriter.writeInt(totalReceived);
+
+        byteWriter.writeLong(sumReceived);
+
+        byteWriter.close();
+
+        return byteWriter.getBytes();
     }
 
     public int getNodeID() {
@@ -77,40 +91,6 @@ public class OverlayNodeReportsTrafficSummary implements Event {
 
     public long getSumReceived() {
         return sumReceived;
-    }
-
-    @Override
-    public byte[] getBytes() {
-        byte[] toSend = null;
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(baos));
-
-            dos.writeByte(type);
-
-            dos.writeInt(nodeID);
-
-            dos.writeInt(totalSent);
-
-            dos.writeInt(totalRelayed);
-
-            dos.writeLong(sumSent);
-
-            dos.writeInt(totalReceived);
-
-            dos.writeLong(sumReceived);
-
-            dos.flush();
-            toSend = baos.toByteArray();
-
-            baos.close();
-            dos.close();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return toSend;
     }
 
     @Override

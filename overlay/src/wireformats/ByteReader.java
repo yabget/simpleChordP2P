@@ -4,6 +4,8 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by ydubale on 2/13/15.
@@ -49,14 +51,35 @@ public class ByteReader {
         return -1;
     }
 
+    public long readLong(){
+        try {
+            return dataInputStream.readLong();
+        } catch (IOException e) {
+            System.out.println("Could not read long.");
+        }
+        return -1;
+    }
+
     public String readString(int length){
         byte[] stringBytes = new byte[length];
         try {
             dataInputStream.readFully(stringBytes);
         } catch (IOException e) {
-            System.out.println("Could not read String/Byte[]");
+            System.out.println("Could not read String/Byte[].");
         }
         return new String(stringBytes);
+    }
+
+    public List<Integer> readIntList(int length){
+        List<Integer> list = new ArrayList<>();
+        try {
+            for(int i=0; i < length; i++){
+                list.add(dataInputStream.readInt());
+            }
+        } catch (IOException e) {
+            System.out.println("Could not read int list.");
+        }
+        return list;
     }
 
 

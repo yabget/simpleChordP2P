@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Created by ydubale on 2/13/15.
@@ -34,6 +35,14 @@ public class ByteWriter {
         }
     }
 
+    public void writeLong(long toWrite){
+        try {
+            dataOutputStream.writeLong(toWrite);
+        } catch (IOException e) {
+            System.out.println("Problem writing long.");
+        }
+    }
+
     /**
      * Precondition: The length of the string has been written
      * @param toWrite - String to write
@@ -44,6 +53,16 @@ public class ByteWriter {
             dataOutputStream.write(stringBytes);
         } catch (IOException e) {
             System.out.println("Problem writing string.");
+        }
+    }
+
+    public void writeIntList(List<Integer> toWrite){
+        try {
+            for(Integer number : toWrite){
+                dataOutputStream.writeInt(number);
+            }
+        } catch (IOException e) {
+            System.out.println("Problem writing int list.");
         }
     }
 

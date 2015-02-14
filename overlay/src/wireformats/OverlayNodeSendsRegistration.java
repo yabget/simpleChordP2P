@@ -1,83 +1,59 @@
 package wireformats;
 
-import java.io.*;
-
 /**
  * Created by ydubale on 1/22/15.
  */
 public class OverlayNodeSendsRegistration implements Event {
 
-    private int lengthIP;
-    private String ipAddr;
-    private int portNum;
-    private byte[] dataBytes;
     private byte type;
+    private byte lengthIP;
+    private String ipAddress;
+    private int portNum;
 
-    public OverlayNodeSendsRegistration(String ipAddr, int portNum) {
-        this.ipAddr = ipAddr;
+    public OverlayNodeSendsRegistration(String ipAddress, int portNum) {
+        this.type = Protocol.OVERLAY_NODE_SENDS_REGISTRATION;
+        this.lengthIP = (byte) ipAddress.length();
+        this.ipAddress = ipAddress;
         this.portNum = portNum;
     }
 
     public OverlayNodeSendsRegistration(byte[] data) {
-        dataBytes = data;
+        ByteReader byteReader = new ByteReader(data);
 
-        ByteArrayInputStream bais = new ByteArrayInputStream(dataBytes);
-        DataInputStream dis = new DataInputStream(new BufferedInputStream(bais));
-        try {
-            type = dis.readByte();
+        type = byteReader.readByte();
 
-            lengthIP = dis.readInt();
+        lengthIP = byteReader.readByte();
 
-            byte[] ipaddr = new byte[lengthIP];
-            dis.readFully(ipaddr);
+        ipAddress = byteReader.readString(lengthIP);
 
-            ipAddr = new String(ipaddr);
+        portNum = byteReader.readInt();
 
-            portNum = dis.readInt();
-
-            bais.close();
-            dis.close();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public String getIpAddr(){
-        return ipAddr;
-    }
-
-    public int getPort(){
-        return portNum;
+        byteReader.close();
     }
 
     @Override
     public byte[] getBytes() {
-        byte[] toSend = null;
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(baos));
+        ByteWriter byteWriter = new ByteWriter();
 
-            dos.writeByte(Protocol.OVERLAY_NODE_SENDS_REGISTRATION);
-            lengthIP = ipAddr.length();
-            dos.writeInt(lengthIP);
+        byteWriter.writeByte(type);
 
-            byte[] ipBytes = ipAddr.getBytes();
-            dos.write(ipBytes);
+        byteWriter.writeByte(lengthIP);
 
-            dos.writeInt(portNum);
+        byteWriter.writeString(ipAddress);
 
-            dos.flush();
-            toSend = baos.toByteArray();
+        byteWriter.writeInt(portNum);
 
-            baos.close();
-            dos.close();
+        byteWriter.close();
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        return byteWriter.getBytes();
+    }
 
-        return toSend;
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public int getPort(){
+        return portNum;
     }
 
     @Override

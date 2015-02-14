@@ -1,21 +1,21 @@
 package wireformats;
 
-import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by ydubale on 1/22/15.
  */
 public class OverlayNodeSendsData implements Event {
 
-    byte type;
-    int destinationID;
-    int sourceID;
+    private byte type;
+    private int destinationID;
+    private int sourceID;
 
-    int payload;
+    private int payload;
 
-    int traceLength;
-    ArrayList<Integer> trace;
+    private int traceLength;
+    private List<Integer> trace;
 
     public OverlayNodeSendsData(int destinationID, int sourceID, int payload, ArrayList<Integer> trace){
         this.type = Protocol.OVERLAY_NODE_SENDS_DATA;
@@ -24,6 +24,47 @@ public class OverlayNodeSendsData implements Event {
         this.payload = payload;
         this.trace = trace;
         this.traceLength = trace.size();
+    }
+
+    public OverlayNodeSendsData(byte[] data){
+        trace = new ArrayList<>();
+
+        ByteReader byteReader = new ByteReader(data);
+
+        type = byteReader.readByte();
+
+        destinationID = byteReader.readInt();
+
+        sourceID = byteReader.readInt();
+
+        payload = byteReader.readInt();
+
+        traceLength = byteReader.readInt();
+
+        trace = byteReader.readIntList(traceLength);
+
+        byteReader.close();
+    }
+
+    @Override
+    public byte[] getBytes() {
+        ByteWriter byteWriter = new ByteWriter();
+
+        byteWriter.writeByte(type);
+
+        byteWriter.writeInt(destinationID);
+
+        byteWriter.writeInt(sourceID);
+
+        byteWriter.writeInt(payload);
+
+        byteWriter.writeInt(traceLength);
+
+        byteWriter.writeIntList(trace);
+
+        byteWriter.close();
+
+        return byteWriter.getBytes();
     }
 
     public String toString(){
@@ -48,71 +89,6 @@ public class OverlayNodeSendsData implements Event {
 
     public void addToTrace(int nodeID){
         trace.add(nodeID);
-    }
-
-    public OverlayNodeSendsData(byte[] data){
-        ByteArrayInputStream bais = new ByteArrayInputStream(data);
-        DataInputStream dis = new DataInputStream(new BufferedInputStream(bais));
-
-        trace = new ArrayList<>();
-
-        try {
-            type = dis.readByte();
-
-            destinationID = dis.readInt();
-
-            sourceID = dis.readInt();
-
-            payload = dis.readInt();;
-
-            traceLength = dis.readInt();
-
-            for (int i=0; i < traceLength; i++){
-                trace.add(dis.readInt());
-            }
-
-            bais.close();
-            dis.close();
-        }
-        catch (IOException ioe){
-            ioe.printStackTrace();
-        }
-    }
-
-
-    @Override
-    public byte[] getBytes() {
-        byte[] toSend = null;
-        try{
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(baos));
-
-            dos.writeByte(type);
-
-            dos.writeInt(destinationID);
-
-            dos.writeInt(sourceID);
-
-            dos.writeInt(payload);
-
-            dos.writeInt(traceLength);
-
-            for(int id : trace){
-                dos.writeInt(id);
-            }
-
-            dos.flush();
-            toSend = baos.toByteArray();
-
-            baos.close();
-            dos.close();
-
-        }
-        catch(IOException ioe){
-            ioe.printStackTrace();
-        }
-
-        return toSend;
     }
 
     @Override
