@@ -15,47 +15,46 @@ public class EventFactory {
     }
 
     public Event getEvent(byte[] data) {
-        Event mainE = null;
         byte protocol = data[0];
 
         switch (protocol) {
             case Protocol.OVERLAY_NODE_SENDS_DATA:
-                mainE = new OverlayNodeSendsData(data);
-                break;
+                return new OverlayNodeSendsData(data);
+
             case Protocol.OVERLAY_NODE_SENDS_REGISTRATION:
-                mainE = new OverlayNodeSendsRegistration(data);
-                break;
+                return new OverlayNodeSendsRegistration(data);
+
             case Protocol.REGISTRY_REPORTS_REGISTRATION_STATUS:
-                mainE = new RegistryReportsRegistrationStatus(data);
-                break;
+                return new RegistryReportsRegistrationStatus(data);
+
             case Protocol.REGISTRY_SENDS_NODE_MANIFEST:
-                mainE = new RegistrySendsNodeManifest(data);
-                break;
+                return new RegistrySendsNodeManifest(data);
+
             case Protocol.NODE_REPORTS_OVERLAY_SETUP_STATUS:
-                mainE = new NodeReportsOverlaySetupStatus(data);
-                break;
+                return new NodeReportsOverlaySetupStatus(data);
+
             case Protocol.REGISTRY_REQUESTS_TASK_INITIATE:
-                mainE = new RegistryRequestsTaskInitiate(data);
-                break;
+                return  new RegistryRequestsTaskInitiate(data);
+
             case Protocol.OVERLAY_NODE_REPORTS_TASK_FINISHED:
-                mainE = new OverlayNodeReportsTaskFinished(data);
-                break;
+                return new OverlayNodeReportsTaskFinished(data);
+
             case Protocol.REGISTRY_REQUESTS_TRAFFIC_SUMMARY:
-                mainE = new RegistryRequestsTrafficSummary(data);
-                break;
+                return new RegistryRequestsTrafficSummary(data);
+
             case Protocol.OVERLAY_NODE_REPORTS_TRAFFIC_SUMMARY:
-                mainE = new OverlayNodeReportsTrafficSummary(data);
-                break;
+                return new OverlayNodeReportsTrafficSummary(data);
+
             case Protocol.OVERLAY_NODE_SENDS_DEREGISTRATION:
-                mainE = new OverlayNodeSendsDeregistration(data);
-                break;
+                return new OverlayNodeSendsDeregistration(data);
+
             case Protocol.REGISTRY_REPORTS_DEREGISTRATION_STATUS:
-                mainE = new RegistryReportsDeregistrationStatus(data);
-                break;
+                return new RegistryReportsDeregistrationStatus(data);
+
             default:
                 System.out.println("ERROR IN FACTORY!");
         }
 
-        return mainE;
+        return null;
     }
 }

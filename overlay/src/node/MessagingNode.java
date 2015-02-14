@@ -285,6 +285,11 @@ public class MessagingNode implements Node {
         receiveTracker++;
     }
 
+    /**
+     * When a messaging node or the registry sends an event to this node,
+     * respond accordingly depending on what the event is
+     * @param event - The event sent by the messaging node or registry
+     */
     @Override
     public void onEvent(Event event) {
         if(event == null){

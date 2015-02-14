@@ -1,7 +1,5 @@
 package wireformats;
 
-import java.io.*;
-
 /**
  * Created by ydubale on 1/22/15.
  */
@@ -27,61 +25,35 @@ public class NodeReportsOverlaySetupStatus implements Event {
         return successStatus != -1;
     }
 
-    public String getInfoString(){
-        return infoString;
-    }
-
     public NodeReportsOverlaySetupStatus(byte[] data){
-        ByteArrayInputStream bais = new ByteArrayInputStream(data);
-        DataInputStream dis = new DataInputStream(new BufferedInputStream(bais));
+        ByteReader byteReader = new ByteReader(data);
 
-        try {
-            type = dis.readByte();
+        type = byteReader.readByte();
 
-            successStatus = dis.readInt();
+        successStatus = byteReader.readInt();
 
-            lengthInfoString = dis.readByte();
+        lengthInfoString = byteReader.readByte();
 
-            byte[] infoStringBytes = new byte[lengthInfoString];
-            dis.readFully(infoStringBytes);
+        infoString = byteReader.readString(lengthInfoString);
 
-            infoString = new String(infoStringBytes);
-
-            bais.close();
-            dis.close();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        byteReader.close();
     }
 
     @Override
     public byte[] getBytes() {
-        byte[] toSend = null;
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(baos));
+        ByteWriter byteWriter = new ByteWriter();
 
-            dos.writeByte(type);
+        byteWriter.writeByte(type);
 
-            dos.writeInt(successStatus);
+        byteWriter.writeInt(successStatus);
 
-            dos.writeByte(lengthInfoString);
+        byteWriter.writeByte(lengthInfoString);
 
-            byte[] infoStringBytes = infoString.getBytes();
-            dos.write(infoStringBytes);
+        byteWriter.writeString(infoString);
 
-            dos.flush();
-            toSend = baos.toByteArray();
+        byteWriter.close();
 
-            baos.close();
-            dos.close();
-        }
-        catch (IOException ioe){
-            ioe.printStackTrace();
-        }
-        return toSend;
+        return byteWriter.getBytes();
     }
 
     @Override
