@@ -27,11 +27,11 @@ public class MessagingNode implements Node {
     private int port;
 
     private RoutingTable routingTable;
-    private ArrayList<Integer> allOtherMNodes;
+    private List<Integer> allOtherMNodes;
     private TCPConnectionsCache tcpCC;
 
     private TCPConnection registryConnection = null;
-    private OverlayNodeReportsTrafficSummary onodeRepTraffSum;
+    private OverlayNodeReportsTrafficSummary onodeRepTraffSum = null;
 
     public int sendTracker;
     public int relayTracker;
@@ -113,7 +113,7 @@ public class MessagingNode implements Node {
 
     // ----------------- Foreground commands ------------------- //
     public void print_counters_and_diagnostics(){
-        System.out.println("SendT\trecvT\trelyT\t\tSSum\t\tRSum");
+        System.out.println("SendTracker\tRecvTracker\tRelayTracker\t\tSendSum\t\tRecvSum");
         System.out.println(getTrafficSummary());
     }
 
@@ -135,7 +135,7 @@ public class MessagingNode implements Node {
      * Sets the list of other nodes but first removes this node from the list
      * @param allOtherMNodes - All other nodes in the overlay
      */
-    public void setAllOtherMNodes(ArrayList<Integer> allOtherMNodes){
+    public void setAllOtherMNodes(List<Integer> allOtherMNodes){
         allOtherMNodes.remove(new Integer(ID)); //Remove self from the list of nodes to send to
         System.out.println("\nAll other nodes: " + allOtherMNodes);
         this.allOtherMNodes = allOtherMNodes;
@@ -158,6 +158,9 @@ public class MessagingNode implements Node {
      * @return
      */
     public String getTrafficSummary(){
+        if(onodeRepTraffSum == null){
+            return "No traffic has been sent yet. Cannot get traffic summary.";
+        }
         return onodeRepTraffSum.getTotalSent() + "\t\t" +
                 onodeRepTraffSum.getTotalReceived() + "\t\t" +
                 onodeRepTraffSum.getTotalRelayed() + "\t\t" +
@@ -318,6 +321,7 @@ public class MessagingNode implements Node {
                 OverlayNodeReportsTrafficSummary onrts = new OverlayNodeReportsTrafficSummary(
                         ID, sendTracker, relayTracker, sendSummation, receiveTracker, receiveSummation
                 );
+                setOverlayNodeRepTraffSum(onrts);
                 registryConnection.sendData(onrts.getBytes());
                 resetCounters();
                 break;

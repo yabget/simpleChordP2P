@@ -30,7 +30,7 @@ public class TCPServerThread implements Runnable {
                 newConnection.startReceiveThread();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Problem configuring new TCPConnection (TCPServerThread).");
         }
     }
 

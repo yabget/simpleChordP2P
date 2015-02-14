@@ -1,7 +1,5 @@
 package wireformats;
 
-import java.io.*;
-
 /**
  * Created by ydubale on 1/22/15.
  */
@@ -14,41 +12,22 @@ public class RegistryRequestsTrafficSummary implements Event {
     }
 
     public RegistryRequestsTrafficSummary(byte[] data){
-        ByteArrayInputStream bais = new ByteArrayInputStream(data);
-        DataInputStream dis = new DataInputStream(new BufferedInputStream(bais));
+        ByteReader byteReader = new ByteReader(data);
 
-        try {
-            type = dis.readByte();
+        type = byteReader.readByte();
 
-            bais.close();
-            dis.close();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        byteReader.close();
     }
 
     @Override
     public byte[] getBytes() {
-        byte[] toSend = null;
-        try{
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(baos));
+        ByteWriter byteWriter = new ByteWriter();
 
-            dos.writeByte(type);
+        byteWriter.writeByte(type);
 
-            dos.flush();
-            toSend = baos.toByteArray();
+        byteWriter.close();
 
-            baos.close();
-            dos.close();
-
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
-
-        return toSend;
+        return byteWriter.getBytes();
     }
 
     @Override

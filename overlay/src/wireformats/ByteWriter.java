@@ -27,6 +27,14 @@ public class ByteWriter {
         }
     }
 
+    public void writeByteArray(byte[] toWrite){
+        try {
+            dataOutputStream.write(toWrite);
+        } catch (IOException e) {
+            System.out.println("Problem writing byte[].");
+        }
+    }
+
     public void writeInt(int toWrite){
         try {
             dataOutputStream.writeInt(toWrite);

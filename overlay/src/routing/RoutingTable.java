@@ -66,7 +66,6 @@ public class RoutingTable {
             int currNode = entries.get(i).getNodeID();
 
             if(currNode == destinationID){
-                //System.out.println("[**INRT**]: " + currNode);
                 return currNode;
             }
 
@@ -75,16 +74,13 @@ public class RoutingTable {
             }
             else{
                 allFail++;
-                //System.out.println("All Fail: " + allFail + "\tEntrySize: " + entriesSize);
             }
         }
 
         if(allFail == entriesSize){
-            //System.out.println("[**LAST**]: " + entries.get(entriesSize-1).getNodeID());
             return entries.get(entriesSize-1).getNodeID(); // Return last node
         }
 
-        //System.out.println("[**BEST**]: " + maxNode);
         return maxNode;
     }
 

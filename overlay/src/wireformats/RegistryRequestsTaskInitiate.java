@@ -1,7 +1,5 @@
 package wireformats;
 
-import java.io.*;
-
 /**
  * Created by ydubale on 1/22/15.
  */
@@ -11,53 +9,35 @@ public class RegistryRequestsTaskInitiate implements Event{
     private int numPacketsToSend;
 
     public RegistryRequestsTaskInitiate(int dataPacketsToSend){
-        this.numPacketsToSend = dataPacketsToSend;
         this.type = Protocol.REGISTRY_REQUESTS_TASK_INITIATE;
+        this.numPacketsToSend = dataPacketsToSend;
     }
 
     public RegistryRequestsTaskInitiate(byte[] data){
-        ByteArrayInputStream bais = new ByteArrayInputStream(data);
-        DataInputStream dis = new DataInputStream(new BufferedInputStream(bais));
+        ByteReader byteReader = new ByteReader(data);
 
-        try{
-            type = dis.readByte();
+        type = byteReader.readByte();
 
-            numPacketsToSend = dis.readInt();
+        numPacketsToSend = byteReader.readInt();
 
-            bais.close();
-            dis.close();
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
-    }
-
-    public int getNumPacketsToSend(){
-        return numPacketsToSend;
+        byteReader.close();
     }
 
     @Override
     public byte[] getBytes() {
-        byte[] toSend = null;
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(baos));
+        ByteWriter byteWriter = new ByteWriter();
 
-            dos.writeByte(type);
+        byteWriter.writeByte(type);
 
-            dos.writeInt(numPacketsToSend);
+        byteWriter.writeInt(numPacketsToSend);
 
-            dos.flush();
+        byteWriter.close();
 
-            toSend = baos.toByteArray();
+        return byteWriter.getBytes();
+    }
 
-            baos.close();
-            dos.close();
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
-        return toSend;
+    public int getNumPacketsToSend(){
+        return numPacketsToSend;
     }
 
     @Override

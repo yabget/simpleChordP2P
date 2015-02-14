@@ -1,46 +1,52 @@
 package wireformats;
 
-import java.io.*;
-
 /**
  * Created by ydubale on 1/22/15.
  */
 public class RegistryReportsRegistrationStatus implements Event {
 
-    private byte[] data;
-    private int assignedID;
-    private String infoString;
     private byte type;
+    private int assignedID;
+    private byte infoLength;
+    private String infoString;
 
     public RegistryReportsRegistrationStatus(int assignedID, String infoString){
+        this.type = Protocol.REGISTRY_REPORTS_REGISTRATION_STATUS;
         this.assignedID = assignedID;
+        this.infoLength = (byte) infoString.length();
         this.infoString = infoString;
     }
 
     public RegistryReportsRegistrationStatus(byte[] data){
-        this.data = data;
+        ByteReader byteReader = new ByteReader(data);
 
-        ByteArrayInputStream bias = new ByteArrayInputStream(this.data);
-        DataInputStream dis = new DataInputStream(new BufferedInputStream(bias));
+        type = byteReader.readByte();
 
-        try {
-            type = dis.readByte();
+        assignedID = byteReader.readInt();
 
-            assignedID = dis.readInt();
+        infoLength = byteReader.readByte();
 
-            byte tempLen = dis.readByte();
-            byte[] infoStr = new byte[tempLen];
+        infoString = byteReader.readString(infoLength);
 
-            dis.readFully(infoStr);
-
-            infoString = new String(infoStr);
-
-        }
-        catch(IOException e){
-            e.printStackTrace();
-        }
+        byteReader.close();
     }
 
+    @Override
+    public byte[] getBytes() {
+        ByteWriter byteWriter = new ByteWriter();
+
+        byteWriter.writeByte(type);
+
+        byteWriter.writeInt(assignedID);
+
+        byteWriter.writeByte(infoLength);
+
+        byteWriter.writeString(infoString);
+
+        byteWriter.close();
+
+        return byteWriter.getBytes();
+    }
 
     public int getAssignedID(){
         return assignedID;
@@ -50,38 +56,8 @@ public class RegistryReportsRegistrationStatus implements Event {
         return infoString;
     }
 
-
-    @Override
-    public byte[] getBytes() {
-        byte[] toSend = null;
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(baos));
-
-            dos.writeByte(Protocol.REGISTRY_REPORTS_REGISTRATION_STATUS);
-
-            dos.writeInt(assignedID);
-
-            dos.writeByte(infoString.length());
-
-            byte[] infoStrByte = infoString.getBytes();
-            dos.write(infoStrByte);
-
-            dos.flush();
-
-            toSend = baos.toByteArray();
-
-            baos.close();
-            dos.close();
-        }
-        catch(IOException e){
-            e.printStackTrace();
-        }
-        return toSend;
-    }
-
     @Override
     public byte getType() {
-        return data[0];
+        return type;
     }
 }

@@ -42,6 +42,10 @@ public class ByteReader {
         return -1;
     }
 
+    public byte[] readByteArray(int length){
+        return (readString(length)).getBytes();
+    }
+
     public int readInt(){
         try {
             return dataInputStream.readInt();

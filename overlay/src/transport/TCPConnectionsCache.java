@@ -29,16 +29,6 @@ public class TCPConnectionsCache {
         return false;
     }
 
-    public int getIDofConnection(String ipAddress, int port){
-        for(Integer id : tcpConns.keySet()){
-            TCPConnection currConn = tcpConns.get(id);
-            if(currConn.getIP().equals(ipAddress) && currConn.getPort() == port){
-                return id;
-            }
-        }
-        return -1;
-    }
-
     public TCPConnection getTCPConnection(int nodeID){
         return tcpConns.get(nodeID);
     }
@@ -48,14 +38,10 @@ public class TCPConnectionsCache {
     }
 
     public String toString(){
-        String toReturn = "Existing connections\n";
+        String toReturn = "\nExisting connections\n";
         for(Integer i : tcpConns.keySet()){
             toReturn += "Node " + i + " " + tcpConns.get(i) + "\n";
         }
         return toReturn;
-    }
-
-    public boolean connectionExists(TCPConnection tcpC){
-        return tcpConns.containsValue(tcpC);
     }
 }

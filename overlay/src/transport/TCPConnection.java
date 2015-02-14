@@ -39,7 +39,6 @@ public class TCPConnection {
         return getIP() + " " + getPort();
     }
 
-    //todo: pass in Event
     public void sendData(byte[] dataToSend){
         tcpSender.sendData(dataToSend);
     }
@@ -93,14 +92,10 @@ public class TCPConnection {
                     dis.readFully(data, 0, dataLen);
 
                     Event receivedEvent = eventFac.getEvent(data);
-
                     node.onEvent(receivedEvent);
-
-
                 }
             }
             catch(IOException ioe ){
-                //ioe.printStackTrace();
                 System.out.println("Connection with node " + socket.getInetAddress().getHostAddress() + " is lost! ");
             }
         }

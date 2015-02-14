@@ -3,10 +3,8 @@ package routing;
 import node.MessagingNode;
 import transport.TCPConnection;
 import transport.TCPConnectionsCache;
+import wireformats.ByteWriter;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 
@@ -56,32 +54,19 @@ public class RoutingEntry {
     }
 
     public byte[] getBytes(){
-        byte[] rEntryBytes = null;
+        ByteWriter byteWriter = new ByteWriter();
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(baos));
+        byteWriter.writeInt(nodeID);
 
-        try {
-            dos.writeInt(nodeID);
+        byteWriter.writeByte(lengthIP);
 
-            dos.writeByte(lengthIP);
+        byteWriter.writeString(ipAddr);
 
-            byte[] ipBytes = ipAddr.getBytes();
-            dos.write(ipBytes);
+        byteWriter.writeInt(port);
 
-            dos.writeInt(port);
+        byteWriter.close();
 
-            dos.flush();
-            rEntryBytes = baos.toByteArray();
-
-            baos.close();
-            dos.close();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return rEntryBytes;
+        return byteWriter.getBytes();
     }
 
 
