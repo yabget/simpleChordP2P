@@ -223,6 +223,8 @@ public class Registry implements Node{
         int numNodesInOverlay = messNode.size();
         if(numTrafficReceived == numNodesInOverlay){
             StatisticsCollectorAndDisplay.printTrafficSummaryForAll(messNode);
+            numTrafficReceived = 0;
+            numCompletedNodes = 0;
         }
     }
 
