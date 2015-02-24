@@ -1,5 +1,7 @@
 package wireformats;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Created by ydubale on 1/22/15.
  */
@@ -10,12 +12,12 @@ public class OverlayNodeReportsTrafficSummary implements Event {
     private int totalSent;
     private int totalRelayed;
     private long sumSent;
-    private int totalReceived;
+    private AtomicInteger totalReceived;
     private long sumReceived;
 
     public OverlayNodeReportsTrafficSummary(
             int nodeID, int totalSent, int totalRelayed,
-            long sumSent, int totalReceived, long sumReceived
+            long sumSent, AtomicInteger totalReceived, long sumReceived
     ){
         this.type = Protocol.OVERLAY_NODE_REPORTS_TRAFFIC_SUMMARY;
         this.nodeID = nodeID;
@@ -39,7 +41,8 @@ public class OverlayNodeReportsTrafficSummary implements Event {
 
         sumSent = byteReader.readLong();
 
-        totalReceived = byteReader.readInt();
+        int totRec =byteReader.readInt();
+        totalReceived = new AtomicInteger(totRec);
 
         sumReceived = byteReader.readLong();
 
@@ -60,7 +63,7 @@ public class OverlayNodeReportsTrafficSummary implements Event {
 
         byteWriter.writeLong(sumSent);
 
-        byteWriter.writeInt(totalReceived);
+        byteWriter.writeInt(totalReceived.get());
 
         byteWriter.writeLong(sumReceived);
 
@@ -85,7 +88,7 @@ public class OverlayNodeReportsTrafficSummary implements Event {
         return sumSent;
     }
 
-    public int getTotalReceived() {
+    public AtomicInteger getTotalReceived() {
         return totalReceived;
     }
 

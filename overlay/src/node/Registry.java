@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by ydubale on 1/20/15.
@@ -27,7 +28,7 @@ public class Registry implements Node{
 
     private int serverPort;
 
-    private Hashtable<Integer, MessagingNode> messNode; //Keeps track of nodes by ID
+    private ConcurrentHashMap<Integer, MessagingNode> messNode; //Keeps track of nodes by ID
     private List<Integer> unUsedKeys; //List of available node IDs
     private TCPConnectionsCache tcpCC;
 
@@ -48,7 +49,7 @@ public class Registry implements Node{
     }
 
     private void intializeContainers(){
-        messNode = new Hashtable<>();
+        messNode = new ConcurrentHashMap<>();
         tcpCC = new TCPConnectionsCache();
     }
 
@@ -56,7 +57,7 @@ public class Registry implements Node{
     /**
      * Lists the messaging nodes currently in the registry
      */
-    public synchronized void list_messaging_nodes(){
+    public void list_messaging_nodes(){
         int count = 1;
         for(Integer i : messNode.keySet()){
             System.out.println(count + ":\t" + messNode.get(i));
@@ -116,7 +117,7 @@ public class Registry implements Node{
      * Uses the unUsedKeys list to find a random key, the key is removed from the list of unUsedKeys
      * @return a random ID
      */
-    private synchronized int getRandomID(){
+    private int getRandomID(){
         Random rand = new Random();
 
         //If all keys have been used
@@ -242,17 +243,12 @@ public class Registry implements Node{
         RegistryReportsDeregistrationStatus rrdergs = new RegistryReportsDeregistrationStatus();
 
         tcpCC.sendEvent(onsdereg.getNodeID(), rrdergs);
+        System.out.println("Deregistration successful!");
 
-        if(tcpCC.removeConn(onsdereg.getNodeID())){
-            System.out.println("Deregistration successful!");
-            synchronized (messNode){
-                messNode.remove(onsdereg.getNodeID());
-            }
-            unUsedKeys.add(onsdereg.getNodeID());
-        }
-        else{
-            System.out.println("Deregistration UNSUCCESFUL!");
-        }
+        tcpCC.removeConn(onsdereg.getNodeID());
+        messNode.remove(onsdereg.getNodeID());
+        unUsedKeys.add(onsdereg.getNodeID());
+
     }
 
     private void sleepSeconds(int seconds){

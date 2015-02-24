@@ -2,8 +2,7 @@ package routing;
 
 import transport.TCPConnectionsCache;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -82,6 +81,51 @@ public class RoutingTable {
         }
 
         return maxNode;
+    }
+
+    public static void main(String args[]){
+        RoutingTable rTable = new RoutingTable();
+
+        //Routing entry
+        //int nodeID, byte lengthIP, String ipAddress, int port
+
+        Random rand = new Random();
+
+        int[] nums = new int[10];
+
+        for(int i=0; i < nums.length; i++){
+            nums[i] = rand.nextInt(128);
+        }
+
+        Arrays.sort(nums);
+        System.out.println("Nodes: ");
+        for(int i : nums){
+            System.out.print(i + "\t");
+        }
+        System.out.println();
+
+
+        byte b = 23;
+
+        for(int i=0; i < nums.length; i++){
+            RoutingEntry rE = new RoutingEntry(nums[i], b, "haha", 13442);
+            rTable.addEntry(rE);
+        }
+
+        for(RoutingEntry rEntry: rTable.getEntries()){
+            System.out.println(rEntry);
+        }
+        System.out.println();
+
+        Scanner scan = new Scanner(System.in);
+
+        while(true){
+            int dest = scan.nextInt();
+            System.out.println(rTable.determineBestNode(dest));
+        }
+
+
+
     }
 
 }

@@ -2,31 +2,25 @@ package transport;
 
 import wireformats.Event;
 
-import java.util.Hashtable;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by ydubale on 1/22/15.
  */
 public class TCPConnectionsCache {
 
-    private Hashtable<Integer, TCPConnection> tcpConns;
+    private ConcurrentHashMap<Integer, TCPConnection> tcpConns;
 
     public TCPConnectionsCache(){
-        tcpConns = new Hashtable<>();
+        tcpConns = new ConcurrentHashMap<>();
     }
 
     public void addNewConn(int nodeID, TCPConnection  tcpC){
         tcpConns.put(nodeID, tcpC);
     }
 
-    public boolean removeConn(int nodeID){
-        synchronized (tcpConns){
-            if(tcpConns.containsKey(nodeID)){
-                tcpConns.remove(nodeID);
-                return true;
-            }
-        }
-        return false;
+    public void removeConn(int nodeID){
+        tcpConns.remove(nodeID);
     }
 
     public TCPConnection getTCPConnection(int nodeID){

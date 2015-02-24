@@ -14,6 +14,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by ydubale on 1/22/15.
@@ -35,7 +36,7 @@ public class MessagingNode implements Node {
 
     public int sendTracker;
     public int relayTracker;
-    public int receiveTracker;
+    AtomicInteger receiveTracker;
 
     public long sendSummation;
     public long receiveSummation;
@@ -191,7 +192,7 @@ public class MessagingNode implements Node {
         sendTracker = 0;
         relayTracker = 0;
         sendSummation = 0;
-        receiveTracker = 0;
+        receiveTracker = new AtomicInteger(0);
         receiveSummation = 0;
     }
 
@@ -199,7 +200,7 @@ public class MessagingNode implements Node {
      * Sends packets to nodes picked at random from the list of nodes
      * @param numPacketsToSend - The number of packets to send
      */
-    private synchronized void startSendingToNodes(int numPacketsToSend){
+    private void startSendingToNodes(int numPacketsToSend){
         Random rand = new Random();
         int numNodes = allOtherMNodes.size();
         ArrayList<Integer> trace;
@@ -267,7 +268,7 @@ public class MessagingNode implements Node {
      * When another messaging node sends data, either relay the packet or accept it
      * @param onsd - OverlayNodeSendsData event
      */
-    private synchronized void handleOverlayNodeSendsData(OverlayNodeSendsData onsd){
+    private void handleOverlayNodeSendsData(OverlayNodeSendsData onsd){
         if(onsd.amInTrace(ID)){
             System.out.println("SOMETHING WENT WRONG, I GOT PACKET AGAIN (i.e. I'm already in trace.");
             return;
@@ -285,7 +286,8 @@ public class MessagingNode implements Node {
 
         int payload = onsd.getPayload();
         receiveSummation += payload;
-        receiveTracker++;
+        //receiveTracker++;
+        receiveTracker.incrementAndGet();
     }
 
     /**
